@@ -25,10 +25,6 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Histoire
-.histoire/
-storybook-static/
-
 # Logs
 logs/
 *.log

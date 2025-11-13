@@ -1,15 +1,18 @@
-# Stylist
+# Stylist Playground
 
-Component playground and testing environment for [stylist-svelte](../stylist-svelte).
+Interactive development and testing environment for [stylist-svelte](../stylist-svelte) components.
+
+**Note**: This project is part of the Stylist ecosystem. See [ECOSYSTEM_ARCHITECTURE.md](../../ECOSYSTEM_ARCHITECTURE.md) for details on the architecture and responsibilities of each project.
 
 ## Purpose
 
-Stylist serves as:
+Stylist Playground serves as:
 
-1. **Development Playground** – experiment with components in isolation.
-2. **Integration Testing** – verify components inside a real SvelteKit shell.
-3. **Design QA** – review visual states before shipping to production.
-4. **AI Model Testing** – provide a safe sandbox for automated agents.
+1. **Interactive Development Environment** – test components with live prop controls and real-time feedback.
+2. **Component Documentation** – generate examples and code snippets for component usage.
+3. **Design QA** – review visual states and theme variations before shipping to production.
+4. **AI Integration** – provide a controlled environment for automated component testing.
+5. **Story Management** – organize and manage component examples and use cases.
 
 ## Features
 
@@ -22,19 +25,30 @@ Stylist serves as:
 ### Prerequisites
 
 - Node.js 18+
-- npm / yarn / pnpm
+- yarn (workspace mode)
 
 ### Installation
 
 ```bash
-# Install dependencies
-npm install
+# From repository root
+yarn install
 
 # Start development server
-npm run dev
+cd packages/stylist-playground
+yarn dev
 
 # Open http://localhost:5173
 ```
+
+### Library Integration
+
+This playground uses the library store from `@stylist-svelte/playground`. See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed information about:
+
+- How the library is connected
+- Import aliases and paths
+- Store management
+- Theme system
+- Performance optimizations
 
 ## Project Structure
 

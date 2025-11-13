@@ -2,6 +2,11 @@
 @import 'tailwindcss/preflight' layer(base);
 @import 'tailwindcss/utilities' layer(utilities);
 
+@theme {
+  --color-*: initial;
+  --dark-mode: class;
+}
+
 /* Custom styles */
 body {
   background-color: rgb(249 250 251);

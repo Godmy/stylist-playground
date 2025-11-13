@@ -1,24 +1,51 @@
 <script lang="ts">
   import { codeToHtml } from 'shiki';
   import { onMount, tick } from 'svelte';
-  
+  import { notificationActions } from '../stores/notifications';
+  import { generateCode, getLanguageForFramework } from '../utils/codeGenerator';
+
   // Параметры компонента с использованием $props()
-  const { 
-    code = '', 
-    language = 'svelte', 
-    theme = 'github-light' 
-  } = $props<{ 
-    code?: string; 
-    language?: string; 
-    theme?: 'light' | 'dark' | 'github-light' | 'github-dark'; 
+  const {
+    code = '',
+    componentName = '',
+    props = {},
+    language = 'svelte',
+    theme = 'github-light'
+  } = $props<{
+    code?: string;
+    componentName?: string;
+    props?: Record<string, any>;
+    language?: string;
+    theme?: 'light' | 'dark' | 'github-light' | 'github-dark';
   }>();
-  
+
   // Внутренние состояния
   let highlightedCode = $state('');
   let isLoading = $state(true);
   let currentTheme = $state(theme);
-  let codeFormat = $state('svelte');
+  // Only Svelte - removed React/Vue support
+  let codeFormat = $state<'svelte'>('svelte');
   let darkMode = $state(false);
+
+  // Генерированный код на основе props
+  const generatedCode = $derived.by(() => {
+    if (componentName && Object.keys(props).length > 0) {
+      return generateCode({
+        componentName,
+        props,
+        framework: codeFormat
+      });
+    }
+    return code;
+  });
+
+  // Язык для подсветки синтаксиса
+  const currentLanguage = $derived.by(() => {
+    if (componentName) {
+      return getLanguageForFramework(codeFormat);
+    }
+    return language;
+  });
   
   // Обновление при изменении темы
   $effect(() => {
@@ -27,9 +54,16 @@
     }
   });
   
-  // Обновление при изменении кода
+  // Обновление при изменении кода или props
   $effect(() => {
-    if (code && language) {
+    if (generatedCode() || code) {
+      highlightCode();
+    }
+  });
+
+  // Обновление при изменении формата кода
+  $effect(() => {
+    if (codeFormat) {
       highlightCode();
     }
   });
@@ -41,21 +75,23 @@
   
   // Подсветка кода
   async function highlightCode() {
-    if (!code) {
+    const codeToHighlight = generatedCode();
+
+    if (!codeToHighlight) {
       highlightedCode = '';
       isLoading = false;
       return;
     }
-    
+
     try {
       isLoading = true;
-      highlightedCode = await codeToHtml(code, {
-        lang: language,
+      highlightedCode = await codeToHtml(codeToHighlight, {
+        lang: currentLanguage(),
         theme: currentTheme
       });
     } catch (error) {
       console.error('Ошибка подсветки кода:', error);
-      highlightedCode = `<pre><code>${code}</code></pre>`;
+      highlightedCode = `<pre><code>${codeToHighlight}</code></pre>`;
     } finally {
       isLoading = false;
     }
@@ -64,25 +100,36 @@
   // Копирование кода
   const copyCode = async () => {
     try {
-      await navigator.clipboard.writeText(code);
-      // Здесь можно добавить уведомление о копировании
-      console.log('Код скопирован в буфер обмена');
+      const codeToCopy = generatedCode();
+      await navigator.clipboard.writeText(codeToCopy);
+      notificationActions.success('Код скопирован в буфер обмена');
     } catch (err) {
       console.error('Не удалось скопировать код:', err);
+      notificationActions.error('Не удалось скопировать код');
     }
   };
-  
+
   // Скачивание файла
   const downloadCode = () => {
-    const blob = new Blob([code], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `component.${language}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      const codeToDownload = generatedCode();
+      const blob = new Blob([codeToDownload], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+
+      // Svelte file extension
+      a.download = `${componentName || 'component'}.svelte`;
+
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      notificationActions.success('Файл успешно скачан');
+    } catch (err) {
+      console.error('Не удалось скачать файл:', err);
+      notificationActions.error('Не удалось скачать файл');
+    }
   };
   
   onMount(() => {
@@ -102,32 +149,25 @@
 </script>
 
 <div class="code-viewer border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-  <!-- Вкладки для разных форматов -->
-  <div class="code-tabs flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-    <button 
-      class="px-4 py-2 text-sm font-medium {codeFormat === 'svelte' ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
-      onclick={() => codeFormat = 'svelte'}
-    >
-      Svelte
-    </button>
-    <button 
-      class="px-4 py-2 text-sm font-medium {codeFormat === 'jsx' ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
-      onclick={() => codeFormat = 'jsx'}
-    >
-      React (JSX)
-    </button>
-    <button 
-      class="px-4 py-2 text-sm font-medium {codeFormat === 'vue' ? 'text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}"
-      onclick={() => codeFormat = 'vue'}
-    >
-      Vue
-    </button>
+  <!-- Header with Svelte badge -->
+  <div class="code-tabs flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-2">
+    <div class="flex items-center gap-2">
+      <span class="px-2 py-1 text-xs font-semibold rounded bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
+        Svelte 5
+      </span>
+      <span class="text-xs text-gray-500 dark:text-gray-400">
+        Component Code
+      </span>
+    </div>
   </div>
   
   <!-- Панель инструментов -->
   <div class="code-toolbar flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
     <div class="text-xs text-gray-500 dark:text-gray-400">
-      {language} • {code.split('\n').length} строк
+      {currentLanguage()} • {generatedCode().split('\n').length} строк
+      {#if componentName}
+        • Динамическая генерация
+      {/if}
     </div>
     <div class="flex space-x-2">
       <button
