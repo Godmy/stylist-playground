@@ -56,7 +56,7 @@
   
   // Обновление при изменении кода или props
   $effect(() => {
-    if (generatedCode() || code) {
+    if (generatedCode || code) {
       highlightCode();
     }
   });
@@ -75,7 +75,7 @@
   
   // Подсветка кода
   async function highlightCode() {
-    const codeToHighlight = generatedCode();
+    const codeToHighlight = generatedCode;
 
     if (!codeToHighlight) {
       highlightedCode = '';
@@ -86,7 +86,7 @@
     try {
       isLoading = true;
       highlightedCode = await codeToHtml(codeToHighlight, {
-        lang: currentLanguage(),
+        lang: currentLanguage,
         theme: currentTheme
       });
     } catch (error) {
@@ -100,7 +100,7 @@
   // Копирование кода
   const copyCode = async () => {
     try {
-      const codeToCopy = generatedCode();
+      const codeToCopy = generatedCode;
       await navigator.clipboard.writeText(codeToCopy);
       notificationActions.success('Код скопирован в буфер обмена');
     } catch (err) {
@@ -112,7 +112,7 @@
   // Скачивание файла
   const downloadCode = () => {
     try {
-      const codeToDownload = generatedCode();
+      const codeToDownload = generatedCode;
       const blob = new Blob([codeToDownload], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -164,7 +164,7 @@
   <!-- Панель инструментов -->
   <div class="code-toolbar flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
     <div class="text-xs text-gray-500 dark:text-gray-400">
-      {currentLanguage()} • {generatedCode().split('\n').length} строк
+      {currentLanguage} • {generatedCode.split('\n').length} строк
       {#if componentName}
         • Динамическая генерация
       {/if}

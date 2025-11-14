@@ -1,403 +1,79 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import { allStories, groupedStories } from '../../lib/utils/stories';
   import {
-    Layers,
-    Package,
-    Grid,
-    List,
-    Search,
-    Filter,
-    ArrowRight,
-    X,
-    Tag,
-    Sparkles,
-    Code,
-    Palette
-  } from 'lucide-svelte';
+    playgroundStore,
+    PlaygroundToolbar,
+    PlaygroundSidebar,
+    BottomPanel,
+    Canvas,
+    Navigator
+  } from '@stylist-svelte/playground';
+  import { onMount } from 'svelte';
 
-  // View modes
-  type ViewMode = 'grid' | 'list';
-  type SortBy = 'name' | 'category';
+  // Placeholder component info
+  let componentName = $state('Playground');
+  let category = $state('Preview');
+  let subcategory = $state('Empty State');
 
-  let searchQuery = $state('');
-  let selectedCategories = $state<Set<string>>(new Set());
-  let viewMode = $state<ViewMode>('grid');
-  let sortBy = $state<SortBy>('name');
-  let showFilters = $state(false);
-
-  // Categories
-  const categories = $derived(Object.keys(groupedStories));
-
-  // Advanced filtering
-  const filteredStories = $derived.by(() => {
-    let stories = [...allStories];
-
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      stories = stories.filter(
-        story =>
-          story.componentName.toLowerCase().includes(query) ||
-          story.category.toLowerCase().includes(query) ||
-          story.subcategory?.toLowerCase().includes(query)
-      );
-    }
-
-    // Category filter
-    if (selectedCategories.size > 0) {
-      stories = stories.filter(story =>
-        selectedCategories.has(story.category)
-      );
-    }
-
-    // Sorting
-    stories.sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.componentName.localeCompare(b.componentName);
-        case 'category':
-          return a.category.localeCompare(b.category);
-        default:
-          return 0;
-      }
-    });
-
-    return stories;
-  });
-
-  // Stats
-  const stats = $derived.by(() => ({
-    total: allStories.length,
-    filtered: filteredStories.length,
-    atoms: allStories.filter(s => s.category === 'atoms').length,
-    molecules: allStories.filter(s => s.category === 'molecules').length,
-    organisms: allStories.filter(s => s.category === 'organisms').length
-  }));
-
-  // Category colors
-  const categoryColors: Record<string, { bg: string; text: string; border: string; hover: string }> = {
-    atoms: {
-      bg: 'bg-blue-50 dark:bg-blue-900/20',
-      text: 'text-blue-700 dark:text-blue-300',
-      border: 'border-blue-200 dark:border-blue-800',
-      hover: 'hover:bg-blue-100 dark:hover:bg-blue-900/30'
-    },
-    molecules: {
-      bg: 'bg-purple-50 dark:bg-purple-900/20',
-      text: 'text-purple-700 dark:text-purple-300',
-      border: 'border-purple-200 dark:border-purple-800',
-      hover: 'hover:bg-purple-100 dark:hover:bg-purple-900/30'
-    },
-    organisms: {
-      bg: 'bg-green-50 dark:bg-green-900/20',
-      text: 'text-green-700 dark:text-green-300',
-      border: 'border-green-200 dark:border-green-800',
-      hover: 'hover:bg-green-100 dark:hover:bg-green-900/30'
-    }
+  // Viewport presets
+  type ViewportPreset = {
+    name: string;
+    width: number;
+    height: number;
+    icon: string;
   };
 
-  function getCategoryColor(category: string) {
-    return categoryColors[category.toLowerCase()] || categoryColors.atoms;
+  const viewportPresets: ViewportPreset[] = [
+    { name: 'Mobile', width: 375, height: 667, icon: 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z' },
+    { name: 'Tablet', width: 768, height: 1024, icon: 'M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
+    { name: 'Desktop', width: 1440, height: 900, icon: 'M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z' },
+    { name: 'Full', width: 1920, height: 1080, icon: 'M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4' }
+  ];
+
+  let selectedViewport = $state<ViewportPreset>(viewportPresets[3]);
+  let zoomLevel = $state(100);
+
+  // Background pattern options
+  let backgroundPattern = $state<'none' | 'dots' | 'grid'>('none');
+
+  // Initialize playground
+  onMount(() => {
+    // Set up default UI state
+    playgroundStore.init();
+  });
+
+  function handleViewportChange(preset: ViewportPreset) {
+    selectedViewport = preset;
   }
 
-  function toggleCategory(category: string) {
-    if (selectedCategories.has(category)) {
-      selectedCategories.delete(category);
+  function handleZoomChange(value: number) {
+    zoomLevel = value;
+  }
+
+  function toggleBackgroundPattern() {
+    if (backgroundPattern === 'none') {
+      backgroundPattern = 'dots';
+    } else if (backgroundPattern === 'dots') {
+      backgroundPattern = 'grid';
     } else {
-      selectedCategories.add(category);
+      backgroundPattern = 'none';
     }
-    selectedCategories = new Set(selectedCategories);
-  }
-
-  function clearFilters() {
-    selectedCategories.clear();
-    searchQuery = '';
-    selectedCategories = new Set();
-  }
-
-  function openPlayground(storyId: string) {
-    goto(`/playground/${storyId}`);
   }
 </script>
 
-<div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-  <div class="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <!-- Hero Header -->
-    <div class="text-center mb-12">
-      <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/50 mb-6">
-        <Sparkles class="w-10 h-10 text-white" />
-      </div>
-
-      <h1 class="text-5xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent mb-4">
-        Interactive Playground
-      </h1>
-
-      <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-8">
-        Explore, customize, and experiment with {stats().total} production-ready Svelte 5 components in real-time
-      </p>
-
-      <!-- Stats Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-2 border-indigo-200 dark:border-indigo-800 hover:shadow-xl transition-shadow">
-          <div class="flex items-center justify-center mb-2">
-            <Package class="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
-          </div>
-          <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{stats().total}</div>
-          <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 font-medium">Total Components</div>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-2 border-blue-200 dark:border-blue-800 hover:shadow-xl transition-shadow">
-          <div class="flex items-center justify-center mb-2">
-            <Code class="w-8 h-8 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div class="text-3xl font-bold text-blue-600 dark:text-blue-400">{stats().atoms}</div>
-          <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 font-medium">Atoms</div>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-2 border-purple-200 dark:border-purple-800 hover:shadow-xl transition-shadow">
-          <div class="flex items-center justify-center mb-2">
-            <Layers class="w-8 h-8 text-purple-600 dark:text-purple-400" />
-          </div>
-          <div class="text-3xl font-bold text-purple-600 dark:text-purple-400">{stats().molecules}</div>
-          <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 font-medium">Molecules</div>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-2 border-green-200 dark:border-green-800 hover:shadow-xl transition-shadow">
-          <div class="flex items-center justify-center mb-2">
-            <Palette class="w-8 h-8 text-green-600 dark:text-green-400" />
-          </div>
-          <div class="text-3xl font-bold text-green-600 dark:text-green-400">{stats().organisms}</div>
-          <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 font-medium">Organisms</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Search and Controls -->
-    <div class="mb-8 space-y-4">
-      <!-- Search Bar -->
-      <div class="flex items-center gap-4">
-        <div class="flex-1 relative group">
-          <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-600 dark:group-focus-within:text-indigo-400 transition-colors" />
-          <input
-            type="text"
-            bind:value={searchQuery}
-            placeholder="Search components... (try 'button', 'input', 'card')"
-            class="w-full pl-12 pr-12 py-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm hover:shadow-md"
-          />
-          {#if searchQuery}
-            <button
-              onclick={() => searchQuery = ''}
-              class="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              aria-label="Clear search"
-            >
-              <X class="w-4 h-4" />
-            </button>
-          {/if}
-        </div>
-
-        <!-- View Toggle -->
-        <div class="flex items-center gap-1 bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 p-1.5 shadow-sm">
-          <button
-            onclick={() => viewMode = 'grid'}
-            class="p-2.5 rounded-lg transition-all {viewMode === 'grid' ? 'bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-lg' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'}"
-            title="Grid view"
-            aria-label="Grid view"
-          >
-            <Grid class="w-5 h-5" />
-          </button>
-          <button
-            onclick={() => viewMode = 'list'}
-            class="p-2.5 rounded-lg transition-all {viewMode === 'list' ? 'bg-gradient-to-br from-indigo-500 to-purple-500 text-white shadow-lg' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'}"
-            title="List view"
-            aria-label="List view"
-          >
-            <List class="w-5 h-5" />
-          </button>
-        </div>
-
-        <!-- Sort -->
-        <select
-          bind:value={sortBy}
-          class="px-4 py-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm hover:shadow-md"
-        >
-          <option value="name">Sort by Name</option>
-          <option value="category">Sort by Category</option>
-        </select>
-
-        <!-- Filter Toggle -->
-        <button
-          onclick={() => showFilters = !showFilters}
-          class="px-4 py-4 rounded-xl border-2 transition-all shadow-sm hover:shadow-md {showFilters ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400'}"
-          aria-label="Toggle filters"
-        >
-          <Filter class="w-5 h-5" />
-        </button>
-      </div>
-
-      <!-- Filters Panel -->
-      {#if showFilters}
-        <div class="p-6 bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-lg animate-slide-down">
-          <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <Tag class="w-4 h-4" />
-            Filter by Category
-          </h3>
-          <div class="flex flex-wrap gap-2">
-            {#each categories as category}
-              {@const colors = getCategoryColor(category)}
-              <button
-                onclick={() => toggleCategory(category)}
-                class="px-4 py-2 rounded-lg text-sm font-semibold transition-all {colors.bg} {colors.text} {colors.hover} {selectedCategories.has(category) ? 'ring-2 ring-offset-2 ring-indigo-500 scale-105' : 'hover:scale-105'}"
-              >
-                {category}
-                <span class="ml-1.5 opacity-70 font-normal">
-                  ({groupedStories[category] ? Object.values(groupedStories[category]).flat().length : 0})
-                </span>
-              </button>
-            {/each}
-          </div>
-
-          {#if selectedCategories.size > 0 || searchQuery}
-            <button
-              onclick={clearFilters}
-              class="mt-4 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
-            >
-              <X class="w-3 h-3" />
-              Clear all filters
-            </button>
-          {/if}
-        </div>
-      {/if}
-    </div>
-
-    <!-- Results Count -->
-    <div class="mb-6 flex items-center justify-between">
-      <p class="text-sm text-gray-600 dark:text-gray-400">
-        Showing <span class="font-bold text-gray-900 dark:text-white">{stats().filtered}</span> of <span class="font-bold text-gray-900 dark:text-white">{stats().total}</span> components
-      </p>
-
-      {#if selectedCategories.size > 0}
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-gray-500 dark:text-gray-400">Active filters:</span>
-          {#each Array.from(selectedCategories) as category}
-            {@const colors = getCategoryColor(category)}
-            <span class="px-2 py-1 rounded text-xs font-medium {colors.bg} {colors.text}">
-              {category}
-            </span>
-          {/each}
-        </div>
-      {/if}
-    </div>
-
-    <!-- Components Grid/List -->
-    {#if viewMode === 'grid'}
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {#each filteredStories as story}
-          {@const colors = getCategoryColor(story.category)}
-          <button
-            onclick={() => openPlayground(story.id)}
-            class="group bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-2xl border-2 border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-400 transition-all duration-300 text-left hover:scale-105 active:scale-100"
-          >
-            <!-- Preview Area with gradient -->
-            <div class="h-36 mb-4 rounded-xl {colors.bg} border-2 {colors.border} flex items-center justify-center overflow-hidden relative group-hover:shadow-lg transition-shadow">
-              <div class="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent dark:from-black/20 dark:to-transparent"></div>
-              <div class="relative text-5xl font-bold {colors.text} opacity-50 group-hover:opacity-100 group-hover:scale-125 transition-all duration-300">
-                {story.componentName.charAt(0)}
-              </div>
-            </div>
-
-            <!-- Component Info -->
-            <div class="space-y-2">
-              <h3 class="text-lg font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1">
-                {story.componentName}
-              </h3>
-
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="px-2.5 py-1 rounded-lg text-xs font-semibold {colors.bg} {colors.text} capitalize border {colors.border}">
-                  {story.category}
-                </span>
-                {#if story.subcategory}
-                  <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                    {story.subcategory}
-                  </span>
-                {/if}
-              </div>
-            </div>
-
-            <!-- Hover Arrow -->
-            <div class="mt-4 flex items-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
-              <span>Open playground</span>
-              <ArrowRight class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </button>
-        {/each}
-      </div>
-    {:else}
-      <div class="space-y-3">
-        {#each filteredStories as story}
-          {@const colors = getCategoryColor(story.category)}
-          <button
-            onclick={() => openPlayground(story.id)}
-            class="group w-full bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm hover:shadow-xl border-2 border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-400 transition-all duration-300 flex items-center gap-5 hover:scale-[1.02] active:scale-100"
-          >
-            <!-- Icon -->
-            <div class="w-20 h-20 rounded-xl {colors.bg} border-2 {colors.border} flex items-center justify-center flex-shrink-0 group-hover:shadow-lg transition-shadow relative overflow-hidden">
-              <div class="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent dark:from-black/20 dark:to-transparent"></div>
-              <div class="relative text-3xl font-bold {colors.text} group-hover:scale-110 transition-transform">
-                {story.componentName.charAt(0)}
-              </div>
-            </div>
-
-            <!-- Info -->
-            <div class="flex-1 text-left">
-              <h3 class="text-xl font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-2">
-                {story.componentName}
-              </h3>
-              <div class="flex items-center gap-3">
-                <span class="text-sm px-3 py-1 rounded-lg font-semibold {colors.bg} {colors.text} capitalize border {colors.border}">
-                  {story.category}
-                </span>
-                {#if story.subcategory}
-                  <span class="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                    / {story.subcategory}
-                  </span>
-                {/if}
-              </div>
-            </div>
-
-            <!-- Arrow -->
-            <div class="text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-2 transition-all">
-              <ArrowRight class="w-6 h-6" />
-            </div>
-          </button>
-        {/each}
-      </div>
-    {/if}
-
-    <!-- Empty State -->
-    {#if filteredStories.length === 0}
-      <div class="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
-          <Search class="w-8 h-8 text-gray-400" />
-        </div>
-        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">No components found</h3>
-        <p class="text-gray-500 dark:text-gray-400 mb-4">Try adjusting your search or filters</p>
-        <button
-          onclick={clearFilters}
-          class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg font-semibold hover:shadow-lg hover:scale-105 transition-all"
-        >
-          Clear all filters
-        </button>
-      </div>
-    {/if}
-  </div>
-</div>
-
 <style>
-  @keyframes slide-down {
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+
+  @keyframes fadeInUp {
     from {
       opacity: 0;
-      transform: translateY(-10px);
+      transform: translateY(30px);
     }
     to {
       opacity: 1;
@@ -405,14 +81,213 @@
     }
   }
 
-  .animate-slide-down {
-    animation: slide-down 0.2s ease-out;
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
   }
 
-  .line-clamp-1 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1.5);
+      opacity: 0;
+    }
+  }
+
+  .float-animation {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 3s infinite;
+  }
+
+  .pulse-ring {
+    animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+  }
+
+  .glassmorphism {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .bg-dots {
+    background-image: radial-gradient(circle, rgba(99, 102, 241, 0.15) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(99, 102, 241, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
   }
 </style>
+
+<div class="flex flex-col h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+  <!-- Toolbar -->
+  <PlaygroundToolbar
+    {componentName}
+    {category}
+    {subcategory}
+  />
+
+  <!-- Main Content Area -->
+  <div class="flex-1 flex overflow-hidden">
+    <!-- Sidebar (collapsible) -->
+    {#if playgroundStore.state.sidebarOpen}
+      <div class="w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-y-auto">
+        <PlaygroundSidebar>
+          <div class="p-6">
+              <div class="text-center py-12">
+                <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 mb-4">
+                  <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  No Component Selected
+                </h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                  Select a component to start experimenting
+                </p>
+                <a
+                  href="/components"
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  Browse Components
+                </a>
+              </div>
+            </div>
+          {/snippet}
+        </PlaygroundSidebar>
+      </div>
+    {/if}
+
+    <!-- Canvas Area -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+      <Canvas>
+        {#snippet children()}
+          <!-- Empty state for playground -->
+          <div class="flex items-center justify-center min-h-[400px]">
+            <div class="text-center max-w-md mx-auto p-8">
+              <div class="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 mb-6 border-2 border-indigo-200 dark:border-indigo-800">
+                <svg class="w-12 h-12 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+              </div>
+
+              <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                Interactive Playground
+              </h2>
+
+              <p class="text-gray-600 dark:text-gray-400 mb-6">
+                This is your creative workspace. Select a component from the library to start customizing and experimenting with live controls.
+              </p>
+
+              <div class="space-y-3">
+                <a
+                  href="/components"
+                  class="block w-full px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all"
+                >
+                  Choose a Component
+                </a>
+
+                <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  <div class="flex-1 h-px bg-gray-200 dark:bg-gray-700"></div>
+                  <span>or</span>
+                  <div class="flex-1 h-px bg-gray-200 dark:bg-gray-700"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <button
+                    onclick={() => playgroundStore.toggleGrid()}
+                    class="px-4 py-2 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors"
+                  >
+                    {playgroundStore.uiState.showGrid ? 'Hide' : 'Show'} Grid
+                  </button>
+
+                  <button
+                    onclick={() => playgroundStore.toggleDarkMode()}
+                    class="px-4 py-2 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:border-indigo-500 dark:hover:border-indigo-400 transition-colors"
+                  >
+                    Toggle Theme
+                  </button>
+                </div>
+              </div>
+
+              <!-- Features preview -->
+              <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
+                  Available Features
+                </p>
+                <div class="grid grid-cols-2 gap-3 text-left">
+                  <div class="flex items-start gap-2">
+                    <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">Live Controls</span>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">Code Export</span>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">Pan & Zoom</span>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">Responsive Preview</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {/snippet}
+      </Canvas>
+
+      <!-- Bottom Panel (collapsible) -->
+      {#if playgroundStore.uiState.bottomPanelOpen}
+        <BottomPanel>
+          <div class="p-6">
+            <div class="text-center py-8">
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                Select a component to see controls and code
+              </p>
+            </div>
+          </div>
+        </BottomPanel>
+      {/if}
+    </div>
+  </div>
+
+</div>

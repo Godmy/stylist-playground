@@ -34,13 +34,13 @@
       <div class="flex items-center justify-between h-14">
         <div class="flex items-center gap-3">
           <a href="/" class="flex items-center gap-3 group">
-            <img src="/stylist-logo.png" alt="Stylist" class="w-8 h-8" />
+            <img src="/stylist-logo.png" alt="Stylist" class="w-10 h-10" />
             <span class="text-xl font-black tracking-tight text-gray-900 dark:text-white">
               STYLIST
             </span>
           </a>
 
-          <div class="h-6 w-px bg-gray-200 dark:bg-gray-700"></div>
+          <div class="h-6 border-l border-gray-300 dark:border-gray-600"></div>
 
           <span class="text-sm font-medium text-gray-400 dark:text-gray-500">Playground</span>
         </div>
