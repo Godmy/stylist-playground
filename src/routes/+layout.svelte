@@ -2,6 +2,7 @@
   import '../app.css';
   import { Moon, Sun, Home } from 'lucide-svelte';
   import { playgroundStore } from '@stylist-svelte/playground';
+  import { page } from '$app/stores';
   import type { Snippet } from 'svelte';
 
   type Props = {
@@ -19,30 +20,70 @@
   // Reactive dark mode state
   let darkMode = $derived(playgroundStore.state.darkMode);
 
+  // Check if on playground page
+  let isPlaygroundPage = $derived($page.url.pathname.startsWith('/playground'));
+
+  // Component tree state (synced with playground page)
+  let componentTreeOpen = $state(false);
+
   function toggleDarkMode() {
     console.log('Layout: Toggling dark mode. Current:', playgroundStore.state.darkMode);
     playgroundStore.toggleDarkMode();
     console.log('Layout: After toggle:', playgroundStore.state.darkMode);
     console.log('Layout: HTML class list:', document.documentElement.classList.toString());
   }
+
+  // Export toggle function for playground page to use
+  if (typeof window !== 'undefined') {
+    (window as any).__toggleComponentTree = () => {
+      componentTreeOpen = !componentTreeOpen;
+      const event = new CustomEvent('toggle-component-tree', { detail: { open: componentTreeOpen } });
+      window.dispatchEvent(event);
+    };
+
+    // Listen for state updates from playground page
+    (window as any).__setComponentTreeState = (open: boolean) => {
+      componentTreeOpen = open;
+    };
+  }
 </script>
 
 <div class="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
-  <!-- Simple top nav -->
+  <!-- Simple top nav (hidden on playground pages) -->
+  {#if !isPlaygroundPage}
   <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="{isPlaygroundPage ? '' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'}">
       <div class="flex items-center justify-between h-14">
         <div class="flex items-center gap-3">
-          <a href="/" class="flex items-center gap-3 group">
+          <!-- Logo in top-left corner (always links to home) -->
+          <a href="/" class="flex items-center pl-3 group">
             <img src="/stylist-logo.png" alt="Stylist" class="w-10 h-10" />
-            <span class="text-xl font-black tracking-tight text-gray-900 dark:text-white">
+          </a>
+
+          {#if isPlaygroundPage}
+            <!-- STYLIST text as toggle button (only on playground pages) -->
+            <button
+              onclick={() => (window as any).__toggleComponentTree?.()}
+              class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 {componentTreeOpen ? 'bg-[#FF3E00]/10 dark:bg-[#FF3E00]/20 ring-2 ring-[#FF3E00] shadow-lg shadow-[#FF3E00]/20' : 'hover:bg-[#FF3E00]/10 dark:hover:bg-[#FF3E00]/20'}"
+            >
+              <span class="text-xl font-black tracking-tight {componentTreeOpen ? 'text-[#FF3E00]' : 'text-gray-900 dark:text-white'}">
+                STYLIST
+              </span>
+            </button>
+          {:else}
+            <!-- Regular STYLIST text (non-playground pages) -->
+            <span class="text-xl font-black tracking-tight text-gray-900 dark:text-white pl-3">
               STYLIST
             </span>
-          </a>
+          {/if}
 
           <div class="h-6 border-l border-gray-300 dark:border-gray-600"></div>
 
-          <span class="text-sm font-medium text-gray-400 dark:text-gray-500">Playground</span>
+          {#if !isPlaygroundPage}
+            <a href="/playground" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+              Playground
+            </a>
+          {/if}
         </div>
 
         <div class="flex items-center gap-4">
@@ -96,9 +137,10 @@
       </div>
     </div>
   </nav>
+  {/if}
 
   <!-- Main content -->
-  <div class="pt-14">
+  <div class="{isPlaygroundPage ? '' : 'pt-14'}">
     {@render children()}
   </div>
 </div>

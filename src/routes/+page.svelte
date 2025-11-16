@@ -328,21 +328,21 @@
       </div>
 
       <!-- AI Models Showcase -->
-      <div class="slide-up mb-10" style="animation-delay: 0.5s">
-        <p class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">
+      <div class="slide-up mb-16" style="animation-delay: 0.5s">
+        <p class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-6">
           Powered by Leading AI Models
         </p>
-        <div class="flex flex-wrap items-center justify-center gap-4">
+        <div class="flex flex-wrap items-center justify-center gap-6">
           {#each aiModels as model, i}
             <a
               href={model.url}
               target="_blank"
               rel="noopener noreferrer"
-              class="group px-6 py-4 bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl border-2 border-gray-200 dark:border-gray-700 hover:border-transparent transition-all duration-300 hover:scale-110 hover:-translate-y-1"
+              class="group px-6 py-4 bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-2xl border-2 border-gray-200 dark:border-gray-700 hover:border-orange-400 dark:hover:border-orange-500 transition-all duration-300 hover:scale-110 hover:-translate-y-2"
               style="animation-delay: {0.6 + i * 0.1}s"
             >
               <div class="flex items-center gap-4">
-                <div class="w-16 h-16 rounded-xl {model.bgColor} p-2 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all group-hover:scale-110">
+                <div class="w-16 h-16 rounded-xl {model.bgColor} p-2 flex items-center justify-center shadow-md group-hover:shadow-xl transition-all group-hover:scale-110 group-hover:rotate-3">
                   <img
                     src={model.logo}
                     alt="{model.name} logo"
@@ -354,7 +354,7 @@
                     <span class="text-lg font-bold text-gray-900 dark:text-white transition-all">
                       {model.name}
                     </span>
-                    <ExternalLink class="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <ArrowRight class="w-4 h-4 text-orange-500 dark:text-orange-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                   </div>
                   <span class="text-xs text-gray-500 dark:text-gray-400">
                     {model.description}
@@ -367,9 +367,9 @@
       </div>
 
       <!-- Stats -->
-      <div id="stats-section" class="slide-up mb-12" style="animation-delay: 0.7s">
+      <div id="stats-section" class="slide-up mb-20" style="animation-delay: 0.7s">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border-2 border-orange-200 dark:border-orange-800 hover:scale-105 transition-transform">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl p-8 border-2 border-orange-300 dark:border-orange-700 hover:border-orange-500 dark:hover:border-orange-400 hover:scale-105 hover:-translate-y-1 transition-all cursor-pointer">
             <div class="text-5xl font-black text-orange-600 dark:text-orange-400 mb-2">
               {animatedStats.totalComponents}
             </div>
@@ -378,7 +378,7 @@
             </div>
           </div>
 
-          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border-2 border-blue-200 dark:border-blue-800 hover:scale-105 transition-transform">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl p-8 border-2 border-blue-300 dark:border-blue-700 hover:border-blue-500 dark:hover:border-blue-400 hover:scale-105 hover:-translate-y-1 transition-all cursor-pointer">
             <div class="text-5xl font-black text-blue-600 dark:text-blue-400 mb-2">
               {animatedStats.atoms}
             </div>
@@ -387,7 +387,7 @@
             </div>
           </div>
 
-          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border-2 border-purple-200 dark:border-purple-800 hover:scale-105 transition-transform">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl p-8 border-2 border-purple-300 dark:border-purple-700 hover:border-purple-500 dark:hover:border-purple-400 hover:scale-105 hover:-translate-y-1 transition-all cursor-pointer">
             <div class="text-5xl font-black text-purple-600 dark:text-purple-400 mb-2">
               {animatedStats.molecules}
             </div>
@@ -396,7 +396,7 @@
             </div>
           </div>
 
-          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 border-2 border-green-200 dark:border-green-800 hover:scale-105 transition-transform">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl p-8 border-2 border-green-300 dark:border-green-700 hover:border-green-500 dark:hover:border-green-400 hover:scale-105 hover:-translate-y-1 transition-all cursor-pointer">
             <div class="text-5xl font-black text-green-600 dark:text-green-400 mb-2">
               {animatedStats.organisms}
             </div>
@@ -408,36 +408,37 @@
       </div>
 
       <!-- CTA Buttons -->
-      <div class="slide-up grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto" style="animation-delay: 0.8s">
+      <div class="slide-up grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto" style="animation-delay: 0.8s">
         <a
           href="/components"
-          class="group relative bg-gradient-to-r from-orange-600 to-red-600 rounded-2xl shadow-2xl hover:shadow-orange-500/50 p-8 transition-all duration-300 hover:scale-105 overflow-hidden"
+          class="group relative bg-gradient-to-r from-orange-600 via-orange-500 to-red-600 rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-orange-500/50 p-8 transition-all duration-300 hover:scale-105 hover:-translate-y-1 overflow-hidden"
         >
-          <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
+          <div class="absolute inset-0 bg-gradient-to-br from-white/0 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
           <div class="relative flex items-center justify-between mb-4">
-            <Package class="w-12 h-12 text-white" />
-            <ArrowRight class="w-8 h-8 text-white/70 group-hover:text-white group-hover:translate-x-2 transition-all" />
+            <Package class="w-12 h-12 text-white drop-shadow-lg" />
+            <ArrowRight class="w-8 h-8 text-white/70 group-hover:text-white group-hover:translate-x-3 transition-all" />
           </div>
           <h3 class="relative text-3xl font-black text-white mb-3">
             Browse Components
           </h3>
-          <p class="relative text-orange-100">
+          <p class="relative text-orange-50">
             Explore {stats.totalComponents} AI-generated production-ready components
           </p>
         </a>
 
         <a
           href="/playground"
-          class="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl hover:shadow-purple-500/50 p-8 border-4 border-gray-900 dark:border-white hover:border-purple-600 dark:hover:border-purple-400 transition-all duration-300 hover:scale-105"
+          class="group relative bg-gradient-to-br from-purple-600 via-purple-500 to-pink-600 rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-purple-500/50 p-8 transition-all duration-300 hover:scale-105 hover:-translate-y-1 overflow-hidden"
         >
-          <div class="flex items-center justify-between mb-4">
-            <Layers class="w-12 h-12 text-gray-900 dark:text-white" />
-            <ArrowRight class="w-8 h-8 text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 group-hover:translate-x-2 transition-all" />
+          <div class="absolute inset-0 bg-gradient-to-br from-white/0 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div class="relative flex items-center justify-between mb-4">
+            <Layers class="w-12 h-12 text-white drop-shadow-lg" />
+            <ArrowRight class="w-8 h-8 text-white/70 group-hover:text-white group-hover:translate-x-3 transition-all" />
           </div>
-          <h3 class="text-3xl font-black text-gray-900 dark:text-white mb-3">
+          <h3 class="relative text-3xl font-black text-white mb-3">
             Interactive Playground
           </h3>
-          <p class="text-gray-600 dark:text-gray-400">
+          <p class="relative text-purple-50">
             Test components with live controls and code generation
           </p>
         </a>
@@ -447,14 +448,14 @@
 </div>
 
 <!-- Atomic Design Visualization -->
-<section class="py-24 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+<section class="py-32 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center mb-16">
-      <div class="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 rounded-full mb-4">
-        <GitBranch class="w-5 h-5 text-purple-600" />
-        <span class="text-sm font-bold text-purple-900 dark:text-purple-300">Atomic Design</span>
+    <div class="text-center mb-20">
+      <div class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30 rounded-full mb-6 border-2 border-orange-300 dark:border-orange-700">
+        <GitBranch class="w-5 h-5 text-orange-600 dark:text-orange-400" />
+        <span class="text-sm font-bold text-orange-900 dark:text-orange-300">Atomic Design</span>
       </div>
-      <h2 class="text-5xl font-black text-gray-900 dark:text-white mb-4">
+      <h2 class="text-5xl md:text-6xl font-black text-gray-900 dark:text-white mb-6">
         Built on Atomic Principles
       </h2>
       <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
@@ -462,56 +463,56 @@
       </p>
     </div>
 
-    <div class="grid md:grid-cols-3 gap-8">
+    <div class="grid md:grid-cols-3 gap-10">
       <!-- Atoms -->
-      <div class="group bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border-2 border-blue-200 dark:border-blue-800 hover:border-blue-500 transition-all hover:scale-105">
-        <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-6 float-animation">
-          <Code class="w-10 h-10 text-white" />
+      <div class="group bg-white dark:bg-gray-800 rounded-3xl shadow-lg hover:shadow-2xl p-10 border-2 border-blue-300 dark:border-blue-700 hover:border-blue-500 dark:hover:border-blue-400 transition-all hover:scale-105 hover:-translate-y-2">
+        <div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-8 float-animation shadow-lg">
+          <Code class="w-12 h-12 text-white" />
         </div>
         <h3 class="text-3xl font-black text-gray-900 dark:text-white mb-4">
           Atoms
         </h3>
-        <p class="text-gray-600 dark:text-gray-400 mb-6">
+        <p class="text-gray-600 dark:text-gray-400 mb-6 min-h-[60px]">
           Basic building blocks - buttons, inputs, labels, icons
         </p>
-        <div class="text-4xl font-black text-blue-600 dark:text-blue-400">
+        <div class="text-5xl font-black text-blue-600 dark:text-blue-400">
           {stats.atoms}
         </div>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">components</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 font-semibold">components</p>
       </div>
 
       <!-- Molecules -->
-      <div class="group bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border-2 border-purple-200 dark:border-purple-800 hover:border-purple-500 transition-all hover:scale-105" style="animation-delay: 0.1s">
-        <div class="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6 float-animation" style="animation-delay: 1s">
-          <Layers class="w-10 h-10 text-white" />
+      <div class="group bg-white dark:bg-gray-800 rounded-3xl shadow-lg hover:shadow-2xl p-10 border-2 border-purple-300 dark:border-purple-700 hover:border-purple-500 dark:hover:border-purple-400 transition-all hover:scale-105 hover:-translate-y-2" style="animation-delay: 0.1s">
+        <div class="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-8 float-animation shadow-lg" style="animation-delay: 1s">
+          <Layers class="w-12 h-12 text-white" />
         </div>
         <h3 class="text-3xl font-black text-gray-900 dark:text-white mb-4">
           Molecules
         </h3>
-        <p class="text-gray-600 dark:text-gray-400 mb-6">
+        <p class="text-gray-600 dark:text-gray-400 mb-6 min-h-[60px]">
           Combined atoms - search bars, cards, form fields
         </p>
-        <div class="text-4xl font-black text-purple-600 dark:text-purple-400">
+        <div class="text-5xl font-black text-purple-600 dark:text-purple-400">
           {stats.molecules}
         </div>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">components</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 font-semibold">components</p>
       </div>
 
       <!-- Organisms -->
-      <div class="group bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border-2 border-green-200 dark:border-green-800 hover:border-green-500 transition-all hover:scale-105" style="animation-delay: 0.2s">
-        <div class="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-6 float-animation" style="animation-delay: 2s">
-          <Package class="w-10 h-10 text-white" />
+      <div class="group bg-white dark:bg-gray-800 rounded-3xl shadow-lg hover:shadow-2xl p-10 border-2 border-green-300 dark:border-green-700 hover:border-green-500 dark:hover:border-green-400 transition-all hover:scale-105 hover:-translate-y-2" style="animation-delay: 0.2s">
+        <div class="w-24 h-24 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-8 float-animation shadow-lg" style="animation-delay: 2s">
+          <Package class="w-12 h-12 text-white" />
         </div>
         <h3 class="text-3xl font-black text-gray-900 dark:text-white mb-4">
           Organisms
         </h3>
-        <p class="text-gray-600 dark:text-gray-400 mb-6">
+        <p class="text-gray-600 dark:text-gray-400 mb-6 min-h-[60px]">
           Complex components - headers, forms, modals
         </p>
-        <div class="text-4xl font-black text-green-600 dark:text-green-400">
+        <div class="text-5xl font-black text-green-600 dark:text-green-400">
           {stats.organisms}
         </div>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">components</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 font-semibold">components</p>
       </div>
     </div>
   </div>
