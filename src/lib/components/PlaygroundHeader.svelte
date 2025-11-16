@@ -9,20 +9,6 @@
 
   let { showComponentTree = false, onToggleComponentTree }: Props = $props();
 
-  // Track store changes - force re-render when store changes
-  let storeVersion = $state(0);
-
-  // Update on every potential store change
-  $effect(() => {
-    // Access all reactive properties to track them
-    playgroundStore.state.viewport;
-    playgroundStore.uiState.showDeviceFrame;
-    playgroundStore.uiState.showGrid;
-    playgroundStore.uiState.zoom;
-    playgroundStore.state.darkMode;
-    storeVersion++;
-  });
-
   // Derived values that update when storeVersion changes
   let currentViewport = $derived(playgroundStore.state.viewport);
   let showDeviceFrame = $derived(playgroundStore.uiState.showDeviceFrame);
