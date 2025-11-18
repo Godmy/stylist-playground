@@ -5,7 +5,25 @@
     ComponentTree
   } from '@stylist-svelte/playground';
   import { onMount, getContext } from 'svelte';
-  import { groupedStories } from '../../lib/utils/stories';
+  import {
+    groupedStories,
+    getStoryById,
+    type Story as PlaygroundStory
+  } from '../../lib/utils/stories';
+
+  const messages = {
+    loading: '\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u043c \u043a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442...',
+    loadErrorDescription:
+      '\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u0435 \u0438\u043b\u0438 \u043f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0432\u044b\u0431\u0440\u0430\u0442\u044c \u0434\u0440\u0443\u0433\u043e\u0439 \u044d\u043b\u0435\u043c\u0435\u043d\u0442 \u0434\u0435\u0440\u0435\u0432\u0430.',
+    retryButton: '\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0443',
+    noComponentDescription:
+      '\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442 \u0438\u0437 \u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a\u0438 \u0438 \u043d\u0430\u0447\u0438\u043d\u0430\u0439\u0442\u0435 \u044d\u043a\u0441\u043f\u0435\u0440\u0438\u043c\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441 \u0436\u0438\u0432\u044b\u043c\u0438 \u043a\u043e\u043d\u0442\u0440\u043e\u043b\u0430\u043c\u0438 \u0438 \u044d\u043a\u0441\u043f\u043e\u0440\u0442\u043e\u043c.',
+    selectButton: '\u0412\u044b\u0431\u0440\u0430\u0442\u044c \u043a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442',
+    notFound: '\u041a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d',
+    loadError: '\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442',
+    loadErrorLog:
+      '\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442 \u043f\u0435\u0441\u043e\u0447\u043d\u0438\u0446\u044b'
+  };
 
   // Get component tree visibility from layout context
   const componentTreeContext = getContext<{ value: boolean }>('showComponentTree');
@@ -13,17 +31,54 @@
 
   // Selected component state
   let selectedStoryId = $state<string | null>(null);
+  let selectedStory = $state<PlaygroundStory | null>(null);
+  let isStoryLoading = $state(false);
+  let loadError = $state<string | null>(null);
+  let storyLoadToken = 0;
 
   // Handle component selection from tree
-  function handleComponentSelect(storyId: string) {
+  async function handleComponentSelect(storyId: string) {
+    if (!storyId) return;
+    if (storyId === selectedStoryId && selectedStory) {
+      return;
+    }
+
     selectedStoryId = storyId;
-    // In a real implementation, you would load the component here
-    // For now, we'll just store the ID
+    selectedStory = null;
+    loadError = null;
+    isStoryLoading = true;
+
+    const currentToken = ++storyLoadToken;
+
+    try {
+      const story = await getStoryById(storyId);
+
+      if (currentToken !== storyLoadToken) {
+        return;
+      }
+
+      if (!story) {
+        loadError = messages.notFound;
+        return;
+      }
+
+      selectedStory = story;
+    } catch (error) {
+      if (currentToken !== storyLoadToken) {
+        return;
+      }
+
+      console.error(messages.loadErrorLog, error);
+      loadError = messages.loadError;
+    } finally {
+      if (currentToken === storyLoadToken) {
+        isStoryLoading = false;
+      }
+    }
   }
 
   // Initialize playground
   onMount(() => {
-    // Set up default UI state
     playgroundStore.init();
   });
 </script>
@@ -61,20 +116,40 @@
 
     <!-- Main content -->
     <div class="flex-1 h-full flex flex-col overflow-hidden">
-      {#if selectedStoryId}
-        <!-- Canvas area when component is selected -->
-        <Canvas />
-      {:else}
-        <!-- Welcome screen when no component selected -->
-        <div class="flex-1 flex items-center justify-center">
-          <div class="text-center max-w-2xl mx-auto p-8">
-            <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              Interactive Playground
-            </h2>
-
-            <p class="text-base text-gray-600 dark:text-gray-400 mb-8">
-              Выберите компонент из библиотеки и начните экспериментировать с живыми контролами
+      <Canvas component={selectedStory?.component}>
+        {#if isStoryLoading}
+          <div class="flex flex-col items-center justify-center gap-4 min-h-[400px] text-center">
+            <div class="w-12 h-12 rounded-full border-4 border-orange-500/70 border-t-transparent animate-spin"></div>
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-300">
+              {messages.loading}
             </p>
+          </div>
+        {:else if loadError}
+          <div class="flex flex-col items-center justify-center gap-4 min-h-[400px] text-center px-6">
+            <p class="text-lg font-semibold text-gray-900 dark:text-white">{loadError}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md">
+              {messages.loadErrorDescription}
+            </p>
+            {#if selectedStoryId}
+              <button
+                onclick={() => selectedStoryId && handleComponentSelect(selectedStoryId)}
+                class="inline-flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-900 border border-orange-500/40 text-orange-600 dark:text-orange-400 rounded-lg font-medium hover:bg-orange-500 hover:text-white transition-all"
+              >
+                {messages.retryButton}
+              </button>
+            {/if}
+          </div>
+        {:else}
+          <div class="flex flex-col items-center justify-center text-center gap-6 min-h-[400px] px-6 py-12">
+            <div>
+              <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                Interactive Playground
+              </h2>
+
+              <p class="text-base text-gray-600 dark:text-gray-400">
+                {messages.noComponentDescription}
+              </p>
+            </div>
 
             <button
               onclick={() => (window as any).__toggleComponentTree?.()}
@@ -83,11 +158,11 @@
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              Выбрать компонент
+              {messages.selectButton}
             </button>
           </div>
-        </div>
-      {/if}
+        {/if}
+      </Canvas>
     </div>
   </div>
 </div>

@@ -57,7 +57,7 @@
         <div class="flex items-center gap-3">
           <!-- Logo in top-left corner (always links to home) -->
           <a href="/" class="flex items-center pl-3 group">
-            <img src="/stylist-logo.png" alt="Stylist" class="w-10 h-10" />
+            <img src="/stylist.png" alt="Stylist logo" class="w-10 h-10" loading="lazy" decoding="async" />
           </a>
 
           {#if isPlaygroundPage}

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { playgroundStore } from '@stylist-svelte/playground';
-  import { ZoomIn, ZoomOut, Smartphone, Tablet, Monitor } from 'lucide-svelte';
+  import { ZoomIn, ZoomOut, Smartphone, Tablet, Monitor, ChevronDown } from 'lucide-svelte';
 
   interface Props {
     showComponentTree?: boolean;
@@ -15,13 +15,66 @@
   let showGrid = $derived(playgroundStore.uiState.showGrid);
   let zoom = $derived(playgroundStore.uiState.zoom);
   let darkMode = $derived(playgroundStore.state.darkMode);
+
+  type ViewportChoice = {
+    id: 'mobile' | 'tablet' | 'desktop';
+    label: string;
+    description: string;
+    icon: typeof Smartphone;
+  };
+
+  const deviceOptions: ViewportChoice[] = [
+    {
+      id: 'mobile',
+      label: 'Mobile (375px)',
+      description: 'iPhone SE breakpoint',
+      icon: Smartphone
+    },
+    {
+      id: 'tablet',
+      label: 'Tablet (768px)',
+      description: 'iPad breakpoint',
+      icon: Tablet
+    },
+    {
+      id: 'desktop',
+      label: 'Desktop (1440px)',
+      description: 'Large screen layout',
+      icon: Monitor
+    }
+  ];
+
+  let deviceMenuOpen = $state(false);
+  const selectedDevice = $derived(
+    deviceOptions.find((device) => device.id === currentViewport) ?? deviceOptions[0]
+  );
+
+  function selectDevice(id: ViewportChoice['id']) {
+    playgroundStore.setViewport(id);
+    deviceMenuOpen = false;
+  }
+
+  function toggleButtonClasses(isActive: boolean) {
+    return [
+      'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border shadow-sm transition-all h-9',
+      isActive
+        ? 'bg-gradient-to-r from-orange-500 to-amber-500 border-orange-600 text-white shadow-lg shadow-orange-500/25'
+        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+    ].join(' ');
+  }
 </script>
+
+<svelte:window
+  on:click={() => {
+    deviceMenuOpen = false;
+  }}
+/>
 
 <div class="flex items-center justify-between h-14 px-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 relative z-50">
   <!-- Left side - Logo and Tree Toggle -->
   <div class="flex items-center gap-3">
     <a href="/" class="flex items-center group">
-      <img src="/stylist-logo.png" alt="Stylist" class="w-10 h-10" />
+      <img src="/stylist.png" alt="Stylist" class="w-10 h-10" loading="lazy" decoding="async" />
     </a>
 
     <button
@@ -36,54 +89,74 @@
 
   <!-- Center - Device and Control Buttons -->
   <div class="flex items-center gap-2">
-    <!-- Device selector (Mobile, Tablet, Desktop) -->
-    <div class="flex items-center gap-0.5 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 shadow-sm h-9">
+    <!-- Device selector dropdown -->
+    <div class="relative">
       <button
-        onclick={() => playgroundStore.setViewport('mobile')}
-        class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all h-8 {currentViewport === 'mobile'
-          ? 'bg-orange-500 text-white'
-          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
-        title="Mobile (375px)"
+        class="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 shadow-sm h-9 min-w-[11rem]"
+        aria-haspopup="listbox"
+        aria-expanded={deviceMenuOpen}
+        onclick={(e) => { e.stopPropagation(); deviceMenuOpen = !deviceMenuOpen; }}
       >
-        <Smartphone class="w-3.5 h-3.5" />
-        <span class="text-xs font-medium">Mobile</span>
+        {#if selectedDevice}
+          <selectedDevice.icon class="w-4 h-4 text-[#FF3E00]" />
+          <div class="flex flex-col leading-tight text-left">
+            <span class="text-xs font-semibold text-gray-900 dark:text-white">
+              {selectedDevice.label}
+            </span>
+            <span class="text-[11px] text-gray-500 dark:text-gray-400">
+              {selectedDevice.description}
+            </span>
+          </div>
+        {/if}
+        <ChevronDown
+          class={`w-3.5 h-3.5 text-gray-500 dark:text-gray-400 transition-transform ml-auto ${deviceMenuOpen ? 'rotate-180' : ''}`}
+        />
       </button>
-      <button
-        onclick={() => playgroundStore.setViewport('tablet')}
-        class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all h-8 {currentViewport === 'tablet'
-          ? 'bg-orange-500 text-white'
-          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
-        title="Tablet (768px)"
-      >
-        <Tablet class="w-3.5 h-3.5" />
-        <span class="text-xs font-medium">Tablet</span>
-      </button>
-      <button
-        onclick={() => playgroundStore.setViewport('desktop')}
-        class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-all h-8 {currentViewport === 'desktop'
-          ? 'bg-orange-500 text-white'
-          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
-        title="Desktop (1440px)"
-      >
-        <Monitor class="w-3.5 h-3.5" />
-        <span class="text-xs font-medium">Desktop</span>
-      </button>
+      {#if deviceMenuOpen}
+        <div
+          class="absolute top-full mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-1 z-50"
+          role="listbox"
+        >
+          {#each deviceOptions as option}
+            <button
+              class={`w-full flex items-start gap-3 px-3 py-2 rounded-lg text-left transition-colors ${option.id === currentViewport
+                ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400'
+                : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+              aria-selected={option.id === currentViewport}
+              onclick={(e) => { e.stopPropagation(); selectDevice(option.id); }}
+            >
+              <option.icon class="w-4 h-4 mt-0.5" />
+              <div class="flex flex-col leading-tight">
+                <span class="text-xs font-semibold">{option.label}</span>
+                <span class="text-[11px] text-gray-500 dark:text-gray-400">
+                  {option.description}
+                </span>
+              </div>
+            </button>
+          {/each}
+        </div>
+      {/if}
     </div>
 
     <!-- Device Frame Toggle -->
     {#if currentViewport !== 'fullscreen'}
       <button
-        onclick={() => playgroundStore.toggleDeviceFrame()}
-        class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border shadow-sm transition-all h-9 {showDeviceFrame
-          ? 'bg-orange-500 border-orange-600 text-white'
-          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
+        class={toggleButtonClasses(showDeviceFrame)}
+        aria-pressed={showDeviceFrame}
         title="Toggle device frame"
+        onclick={() => playgroundStore.toggleDeviceFrame()}
       >
+        <span class="inline-flex h-2 w-2 rounded-full {showDeviceFrame ? 'bg-white' : 'bg-gray-400/70'}"></span>
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <rect x="4" y="3" width="16" height="18" rx="2" stroke-width="2"/>
           <path d="M9 21h6" stroke-width="2" stroke-linecap="round"/>
         </svg>
-        <span class="text-xs font-medium">Frame</span>
+        <span class="text-xs font-medium">
+          Frame
+          <span class="ml-1 text-[10px] font-semibold uppercase tracking-wide">
+            {showDeviceFrame ? 'ON' : 'OFF'}
+          </span>
+        </span>
       </button>
     {/if}
 
@@ -110,16 +183,21 @@
 
     <!-- Grid Toggle -->
     <button
-      onclick={() => playgroundStore.toggleGrid()}
-      class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border shadow-sm transition-all h-9 {showGrid
-        ? 'bg-orange-500 border-orange-600 text-white'
-        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
+      class={toggleButtonClasses(showGrid)}
+      aria-pressed={showGrid}
       title="Toggle grid"
+      onclick={() => playgroundStore.toggleGrid()}
     >
+      <span class="inline-flex h-2 w-2 rounded-full {showGrid ? 'bg-white' : 'bg-gray-400/70'}"></span>
       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
       </svg>
-      <span class="text-xs font-medium">Grid</span>
+      <span class="text-xs font-medium">
+        Grid
+        <span class="ml-1 text-[10px] font-semibold uppercase tracking-wide">
+          {showGrid ? 'ON' : 'OFF'}
+        </span>
+      </span>
     </button>
   </div>
 

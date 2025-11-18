@@ -1,10 +1,8 @@
-<script lang="ts">
-  import { codeToHtml } from 'shiki';
-  import { onMount, tick } from 'svelte';
+﻿<script lang="ts">
+  import { onMount } from 'svelte';
   import { notificationActions } from '../stores/notifications';
   import { generateCode, getLanguageForFramework } from '../utils/codeGenerator';
 
-  // Параметры компонента с использованием $props()
   const {
     code = '',
     componentName = '',
@@ -19,15 +17,15 @@
     theme?: 'light' | 'dark' | 'github-light' | 'github-dark';
   }>();
 
-  // Внутренние состояния
   let highlightedCode = $state('');
   let isLoading = $state(true);
   let currentTheme = $state(theme);
   // Only Svelte - removed React/Vue support
   let codeFormat = $state<'svelte'>('svelte');
   let darkMode = $state(false);
+  let highlightSequence = 0;
+  let shikiLoader: Promise<typeof import('shiki')> | null = null;
 
-  // Генерированный код на основе props
   const generatedCode = $derived.by(() => {
     if (componentName && Object.keys(props).length > 0) {
       return generateCode({
@@ -39,7 +37,6 @@
     return code;
   });
 
-  // Язык для подсветки синтаксиса
   const currentLanguage = $derived.by(() => {
     if (componentName) {
       return getLanguageForFramework(codeFormat);
@@ -47,36 +44,27 @@
     return language;
   });
   
-  // Обновление при изменении темы
   $effect(() => {
-    if (currentTheme) {
-      highlightCode();
-    }
-  });
-  
-  // Обновление при изменении кода или props
-  $effect(() => {
-    if (generatedCode || code) {
-      highlightCode();
-    }
-  });
+    const codeSnippet = generatedCode;
+    const lang = currentLanguage;
+    const activeTheme = currentTheme;
+    const requestId = ++highlightSequence;
 
-  // Обновление при изменении формата кода
-  $effect(() => {
-    if (codeFormat) {
-      highlightCode();
-    }
+    highlightCode(codeSnippet, lang, activeTheme, requestId);
   });
   
-  // Установка темы в зависимости от режима
   $effect(() => {
     currentTheme = darkMode ? 'github-dark' : 'github-light';
   });
   
-  // Подсветка кода
-  async function highlightCode() {
-    const codeToHighlight = generatedCode;
+  const loadShiki = () => {
+    if (!shikiLoader) {
+      shikiLoader = import('shiki');
+    }
+    return shikiLoader;
+  };
 
+  async function highlightCode(codeToHighlight: string, currentLanguage: string, currentTheme: string, requestId: number) {
     if (!codeToHighlight) {
       highlightedCode = '';
       isLoading = false;
@@ -85,31 +73,39 @@
 
     try {
       isLoading = true;
-      highlightedCode = await codeToHtml(codeToHighlight, {
+      const { codeToHtml } = await loadShiki();
+      const highlighted = await codeToHtml(codeToHighlight, {
         lang: currentLanguage,
         theme: currentTheme
       });
+
+      if (requestId === highlightSequence) {
+        highlightedCode = highlighted;
+      }
     } catch (error) {
-      console.error('Ошибка подсветки кода:', error);
-      highlightedCode = `<pre><code>${codeToHighlight}</code></pre>`;
+      if (requestId === highlightSequence) {
+        console.error('error1', error);
+        highlightedCode = `<pre><code>${codeToHighlight}</code></pre>`;
+      }
     } finally {
-      isLoading = false;
+      if (requestId === highlightSequence) {
+        isLoading = false;
+      }
     }
   }
   
-  // Копирование кода
+
   const copyCode = async () => {
     try {
       const codeToCopy = generatedCode;
       await navigator.clipboard.writeText(codeToCopy);
-      notificationActions.success('Код скопирован в буфер обмена');
+      notificationActions.success('success');
     } catch (err) {
-      console.error('Не удалось скопировать код:', err);
-      notificationActions.error('Не удалось скопировать код');
+      console.error('error2', err);
+      notificationActions.error('error3');
     }
   };
 
-  // Скачивание файла
   const downloadCode = () => {
     try {
       const codeToDownload = generatedCode;
@@ -125,26 +121,21 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      notificationActions.success('Файл успешно скачан');
+      notificationActions.success('success');
     } catch (err) {
-      console.error('Не удалось скачать файл:', err);
-      notificationActions.error('Не удалось скачать файл');
+      console.error('error4', err);
+      notificationActions.error('error5');
     }
   };
   
   onMount(() => {
-    // Определяем начальную тему в зависимости от системы
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       darkMode = true;
     }
     
-    // Подписываемся на изменения темы
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
       darkMode = e.matches;
     });
-    
-    // Подсветка кода при монтировании
-    highlightCode();
   });
 </script>
 
@@ -161,43 +152,43 @@
     </div>
   </div>
   
-  <!-- Панель инструментов -->
+  <!-- РџР°РЅРµР»СЊ РёРЅСЃС‚СЂСѓРјРµРЅС‚РѕРІ -->
   <div class="code-toolbar flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
     <div class="text-xs text-gray-500 dark:text-gray-400">
-      {currentLanguage} • {generatedCode.split('\n').length} строк
+      {currentLanguage} вЂў {generatedCode.split('\n').length} СЃС‚СЂРѕРє
       {#if componentName}
-        • Динамическая генерация
+        вЂў Р”РёРЅР°РјРёС‡РµСЃРєР°СЏ РіРµРЅРµСЂР°С†РёСЏ
       {/if}
     </div>
     <div class="flex space-x-2">
       <button
         onclick={copyCode}
         class="text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-2 py-1 rounded"
-        title="Копировать код"
+        title="РљРѕРїРёСЂРѕРІР°С‚СЊ РєРѕРґ"
       >
-        Копировать
+        РљРѕРїРёСЂРѕРІР°С‚СЊ
       </button>
       <button
         onclick={downloadCode}
         class="text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-2 py-1 rounded"
-        title="Скачать файл"
+        title="РЎРєР°С‡Р°С‚СЊ С„Р°Р№Р»"
       >
-        Скачать
+        РЎРєР°С‡Р°С‚СЊ
       </button>
     </div>
   </div>
   
-  <!-- Контейнер для подсвеченного кода -->
+  <!-- РљРѕРЅС‚РµР№РЅРµСЂ РґР»СЏ РїРѕРґСЃРІРµС‡РµРЅРЅРѕРіРѕ РєРѕРґР° -->
   <div class="code-content overflow-auto max-h-96">
     {#if isLoading}
       <div class="p-4 text-center text-gray-500 dark:text-gray-400">
-        Загрузка подсветки кода...
+        Р—Р°РіСЂСѓР·РєР° РїРѕРґСЃРІРµС‚РєРё РєРѕРґР°...
       </div>
     {:else if highlightedCode}
       {@html highlightedCode}
     {:else}
       <div class="p-4 text-gray-500 dark:text-gray-400">
-        Нет кода для отображения
+        РќРµС‚ РєРѕРґР° РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ
       </div>
     {/if}
   </div>
