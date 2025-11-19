@@ -64,9 +64,11 @@
             <!-- STYLIST text as toggle button (only on playground pages) -->
             <button
               onclick={() => (window as any).__toggleComponentTree?.()}
-              class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 {componentTreeOpen ? 'bg-[#FF3E00]/10 dark:bg-[#FF3E00]/20 ring-2 ring-[#FF3E00] shadow-lg shadow-[#FF3E00]/20' : 'hover:bg-[#FF3E00]/10 dark:hover:bg-[#FF3E00]/20'}"
+              class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 {componentTreeOpen
+                ? 'bg-[var(--playground-accent-surface)] dark:bg-[var(--playground-accent-surface-strong)] ring-2 ring-[var(--playground-accent)] shadow-[0_15px_30px_var(--playground-accent-shadow)]'
+                : 'hover:bg-[var(--playground-accent-surface)] dark:hover:bg-[var(--playground-accent-surface-strong)]'}"
             >
-              <span class="text-xl font-black tracking-tight {componentTreeOpen ? 'text-[#FF3E00]' : 'text-gray-900 dark:text-white'}">
+              <span class="text-xl font-black tracking-tight {componentTreeOpen ? 'text-[var(--playground-accent)]' : 'text-gray-900 dark:text-white'}">
                 STYLIST
               </span>
             </button>
@@ -80,7 +82,7 @@
           <div class="h-6 border-l border-gray-300 dark:border-gray-600"></div>
 
           {#if !isPlaygroundPage}
-            <a href="/playground" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+            <a href="/playground" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-[var(--playground-accent)] dark:hover:text-[var(--playground-accent)] transition-colors">
               Playground
             </a>
           {/if}

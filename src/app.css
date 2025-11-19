@@ -7,6 +7,26 @@
   --dark-mode: class;
 }
 
+:root {
+  --playground-accent: #FF6B35;
+  --playground-accent-strong: #FF3E00;
+  --playground-accent-contrast: #FFFFFF;
+  --playground-accent-surface: rgba(255, 107, 53, 0.12);
+  --playground-accent-surface-strong: rgba(255, 107, 53, 0.22);
+  --playground-accent-shadow: rgba(255, 107, 53, 0.18);
+  --playground-spinner-border: rgba(255, 143, 110, 0.7);
+  --playground-gradient-light-from: #f9fafb;
+  --playground-gradient-light-via: #f3f4f6;
+  --playground-gradient-light-to: #f3f4f6;
+  --playground-gradient-dark-from: #0f172a;
+  --playground-gradient-dark-via: #0b1120;
+  --playground-gradient-dark-to: #0f172a;
+  --playground-glow-light-1: rgba(249, 115, 22, 0.08);
+  --playground-glow-light-2: rgba(239, 68, 68, 0.08);
+  --playground-glow-dark-1: rgba(249, 115, 22, 0.12);
+  --playground-glow-dark-2: rgba(168, 85, 247, 0.12);
+}
+
 /* Custom styles */
 body {
   background-color: rgb(249 250 251);

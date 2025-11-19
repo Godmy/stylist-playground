@@ -98,6 +98,23 @@
       opacity: 1;
     }
   }
+
+  .accent-outline-button {
+    border: 1px solid color-mix(in srgb, var(--playground-accent, #FF6B35) 40%, transparent);
+    color: var(--playground-accent, #FF6B35);
+    transition: all 160ms ease;
+  }
+
+  .accent-outline-button:hover {
+    background-color: var(--playground-accent, #FF6B35);
+    color: var(--playground-accent-contrast, #FFFFFF);
+    border-color: var(--playground-accent, #FF6B35);
+  }
+
+  .accent-spinner {
+    border-color: var(--playground-spinner-border, rgba(255, 143, 110, 0.7));
+    border-top-color: transparent;
+  }
 </style>
 
 <div class="flex flex-col h-full w-full bg-gray-50 dark:bg-gray-900 overflow-hidden">
@@ -106,10 +123,14 @@
   <div class="flex-1 flex overflow-hidden min-h-0 max-h-full">
     <!-- Component tree sidebar (conditional with animation) -->
     {#if showComponentTree}
-      <div class="w-80 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl shadow-[#FF3E00]/5 sidebar-enter" style="height: 100%; display: grid; grid-template-rows: 1fr;">
+      <div
+        class="w-80 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl sidebar-enter"
+        style="height: 100%; display: grid; grid-template-rows: 1fr; box-shadow: 0 20px 45px var(--playground-accent-shadow, rgba(255, 107, 53, 0.18));"
+      >
         <ComponentTree
           {groupedStories}
           onComponentSelect={handleComponentSelect}
+          selectedStoryId={selectedStoryId}
         />
       </div>
     {/if}
@@ -119,12 +140,12 @@
       <Canvas component={selectedStory?.component}>
         {#if isStoryLoading}
           <div class="flex flex-col items-center justify-center gap-4 min-h-[400px] text-center">
-            <div class="w-12 h-12 rounded-full border-4 border-orange-500/70 border-t-transparent animate-spin"></div>
+            <div class="w-12 h-12 rounded-full border-4 border-t-transparent animate-spin accent-spinner"></div>
             <p class="text-sm font-medium text-gray-600 dark:text-gray-300">
               {messages.loading}
             </p>
           </div>
-        {:else if loadError}
+{:else if loadError}
           <div class="flex flex-col items-center justify-center gap-4 min-h-[400px] text-center px-6">
             <p class="text-lg font-semibold text-gray-900 dark:text-white">{loadError}</p>
             <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md">
@@ -133,7 +154,7 @@
             {#if selectedStoryId}
               <button
                 onclick={() => selectedStoryId && handleComponentSelect(selectedStoryId)}
-                class="inline-flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-900 border border-orange-500/40 text-orange-600 dark:text-orange-400 rounded-lg font-medium hover:bg-orange-500 hover:text-white transition-all"
+                class="inline-flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-900 rounded-lg font-medium accent-outline-button"
               >
                 {messages.retryButton}
               </button>

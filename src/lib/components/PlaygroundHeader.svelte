@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { playgroundStore } from '@stylist-svelte/playground';
-  import { ZoomIn, ZoomOut, Smartphone, Tablet, Monitor, ChevronDown } from 'lucide-svelte';
+  import { playgroundStore, colorSchemes, type ColorSchemeId, type PlaygroundColorScheme } from 'stylist-svelte/playground';
+  import { ZoomIn, ZoomOut, Smartphone, Tablet, Monitor, ChevronDown, Check } from 'lucide-svelte';
 
   interface Props {
     showComponentTree?: boolean;
@@ -15,6 +15,9 @@
   let showGrid = $derived(playgroundStore.uiState.showGrid);
   let zoom = $derived(playgroundStore.uiState.zoom);
   let darkMode = $derived(playgroundStore.state.darkMode);
+  const activeColorScheme = $derived(
+    colorSchemes.find((scheme: PlaygroundColorScheme) => scheme.id === playgroundStore.uiState.colorScheme) ?? colorSchemes[0]
+  );
 
   type ViewportChoice = {
     id: 'mobile' | 'tablet' | 'desktop';
@@ -45,6 +48,7 @@
   ];
 
   let deviceMenuOpen = $state(false);
+  let colorMenuOpen = $state(false);
   const selectedDevice = $derived(
     deviceOptions.find((device) => device.id === currentViewport) ?? deviceOptions[0]
   );
@@ -54,11 +58,16 @@
     deviceMenuOpen = false;
   }
 
+  function selectColorScheme(id: ColorSchemeId) {
+    playgroundStore.setColorScheme(id);
+    colorMenuOpen = false;
+  }
+
   function toggleButtonClasses(isActive: boolean) {
     return [
       'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border shadow-sm transition-all h-9',
       isActive
-        ? 'bg-gradient-to-r from-orange-500 to-amber-500 border-orange-600 text-white shadow-lg shadow-orange-500/25'
+        ? 'bg-gradient-to-r from-[var(--playground-accent)] to-[var(--playground-accent-strong)] border-[var(--playground-accent)] text-[var(--playground-accent-contrast)] shadow-[0_12px_30px_var(--playground-accent-shadow)]'
         : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
     ].join(' ');
   }
@@ -67,6 +76,7 @@
 <svelte:window
   on:click={() => {
     deviceMenuOpen = false;
+    colorMenuOpen = false;
   }}
 />
 
@@ -79,9 +89,11 @@
 
     <button
       onclick={onToggleComponentTree}
-      class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 {showComponentTree ? 'bg-[#FF3E00]/10 dark:bg-[#FF3E00]/20 ring-2 ring-[#FF3E00] shadow-lg shadow-[#FF3E00]/20' : 'hover:bg-[#FF3E00]/10 dark:hover:bg-[#FF3E00]/20'}"
+      class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 {showComponentTree
+        ? 'bg-[var(--playground-accent-surface)] dark:bg-[var(--playground-accent-surface-strong)] ring-2 ring-[var(--playground-accent)] shadow-[0_15px_30px_var(--playground-accent-shadow)]'
+        : 'hover:bg-[var(--playground-accent-surface)] dark:hover:bg-[var(--playground-accent-surface-strong)]'}"
     >
-      <span class="text-xl font-black tracking-tight {showComponentTree ? 'text-[#FF3E00]' : 'text-gray-900 dark:text-white'}">
+      <span class="text-xl font-black tracking-tight {showComponentTree ? 'text-[var(--playground-accent)]' : 'text-gray-900 dark:text-white'}">
         STYLIST
       </span>
     </button>
@@ -98,7 +110,7 @@
         onclick={(e) => { e.stopPropagation(); deviceMenuOpen = !deviceMenuOpen; }}
       >
         {#if selectedDevice}
-          <selectedDevice.icon class="w-4 h-4 text-[#FF3E00]" />
+          <selectedDevice.icon class="w-4 h-4 text-[var(--playground-accent)]" />
           <div class="flex flex-col leading-tight text-left">
             <span class="text-xs font-semibold text-gray-900 dark:text-white">
               {selectedDevice.label}
@@ -120,8 +132,9 @@
           {#each deviceOptions as option}
             <button
               class={`w-full flex items-start gap-3 px-3 py-2 rounded-lg text-left transition-colors ${option.id === currentViewport
-                ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400'
+                ? 'bg-[var(--playground-accent-surface)] text-[var(--playground-accent)]'
                 : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+              role="option"
               aria-selected={option.id === currentViewport}
               onclick={(e) => { e.stopPropagation(); selectDevice(option.id); }}
             >
@@ -167,9 +180,9 @@
         class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-all group h-8"
         title="Zoom out (Ctrl + -)"
       >
-        <ZoomOut class="w-3.5 h-3.5 text-gray-600 dark:text-gray-400 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors" />
+        <ZoomOut class="w-3.5 h-3.5 text-gray-600 dark:text-gray-400 group-hover:text-[var(--playground-accent)] dark:group-hover:text-[var(--playground-accent)] transition-colors" />
       </button>
-      <span class="text-xs font-mono font-semibold text-orange-700 dark:text-orange-300 min-w-[2.5rem] text-center px-2 h-8 flex items-center justify-center">
+      <span class="text-xs font-mono font-semibold text-[var(--playground-accent)] min-w-[2.5rem] text-center px-2 h-8 flex items-center justify-center">
         {Math.round(zoom * 100)}%
       </span>
       <button
@@ -177,7 +190,7 @@
         class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-all group h-8"
         title="Zoom in (Ctrl + +)"
       >
-        <ZoomIn class="w-3.5 h-3.5 text-gray-600 dark:text-gray-400 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors" />
+        <ZoomIn class="w-3.5 h-3.5 text-gray-600 dark:text-gray-400 group-hover:text-[var(--playground-accent)] dark:group-hover:text-[var(--playground-accent)] transition-colors" />
       </button>
     </div>
 
@@ -247,5 +260,38 @@
         </svg>
       {/if}
     </button>
+
+    <div class="relative">
+      <button
+        class="w-9 h-9 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center shadow-sm transition-all"
+        aria-haspopup="menu"
+        aria-expanded={colorMenuOpen}
+        aria-label="Select color scheme"
+        onclick={(e) => { e.stopPropagation(); colorMenuOpen = !colorMenuOpen; }}
+        style={`background-image: linear-gradient(135deg, ${activeColorScheme.accent}, ${activeColorScheme.accentStrong});`}
+      ></button>
+      {#if colorMenuOpen}
+        <div class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-2 z-50">
+          <p class="px-3 pb-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Цветовые схемы</p>
+          {#each colorSchemes as scheme: PlaygroundColorScheme}
+            <button
+        class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              onclick={() => selectColorScheme(scheme.id)}
+            >
+              <span class="font-medium">{scheme.name}</span>
+              <div class="flex items-center gap-2">
+                <span
+                  class="w-6 h-6 rounded-full border border-white/70 ring-1 ring-gray-200 dark:ring-gray-700"
+                  style={`background-image: linear-gradient(135deg, ${scheme.accent}, ${scheme.accentStrong});`}
+                ></span>
+                {#if scheme.id === activeColorScheme.id}
+                  <Check class="w-4 h-4" style={`color: ${scheme.accent};`} />
+                {/if}
+              </div>
+            </button>
+          {/each}
+        </div>
+      {/if}
+    </div>
   </div>
 </div>
