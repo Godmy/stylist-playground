@@ -1,0 +1,7 @@
+# Ignore all screenshots
+*.png
+*.jpg
+*.jpeg
+
+# But keep this directory
+!.gitignore

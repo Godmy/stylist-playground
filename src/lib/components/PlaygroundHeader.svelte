@@ -1,13 +1,30 @@
 <script lang="ts">
   import { playgroundStore, colorSchemes, type ColorSchemeId, type PlaygroundColorScheme } from 'stylist-svelte/playground';
-  import { ZoomIn, ZoomOut, Smartphone, Tablet, Monitor, ChevronDown, Check } from 'lucide-svelte';
+  import { ZoomIn, ZoomOut, Smartphone, Tablet, Monitor, ChevronDown, Check, Camera, Sparkles, Pencil, X } from 'lucide-svelte';
 
   interface Props {
     showComponentTree?: boolean;
+    showAIPanel?: boolean;
+    drawingMode?: boolean;
+    drawColor?: string;
     onToggleComponentTree?: () => void;
+    onToggleAIPanel?: () => void;
+    onToggleDrawingMode?: () => void;
+    onTakeScreenshot?: () => void;
+    onChangeDrawColor?: (color: string) => void;
   }
 
-  let { showComponentTree = false, onToggleComponentTree }: Props = $props();
+  let {
+    showComponentTree = false,
+    showAIPanel = false,
+    drawingMode = false,
+    drawColor = '#ef4444',
+    onToggleComponentTree,
+    onToggleAIPanel,
+    onToggleDrawingMode,
+    onTakeScreenshot,
+    onChangeDrawColor
+  }: Props = $props();
 
   // Derived values that update when storeVersion changes
   let currentViewport = $derived(playgroundStore.state.viewport);
@@ -49,9 +66,23 @@
 
   let deviceMenuOpen = $state(false);
   let colorMenuOpen = $state(false);
+  let drawColorMenuOpen = $state(false);
   const selectedDevice = $derived(
     deviceOptions.find((device) => device.id === currentViewport) ?? deviceOptions[0]
   );
+
+  // Drawing colors
+  const drawColors = [
+    { name: 'Red', value: '#ef4444' },
+    { name: 'Orange', value: '#f97316' },
+    { name: 'Yellow', value: '#eab308' },
+    { name: 'Green', value: '#22c55e' },
+    { name: 'Blue', value: '#3b82f6' },
+    { name: 'Purple', value: '#a855f7' },
+    { name: 'Pink', value: '#ec4899' },
+    { name: 'White', value: '#ffffff' },
+    { name: 'Black', value: '#000000' }
+  ];
 
   function selectDevice(id: ViewportChoice['id']) {
     playgroundStore.setViewport(id);
@@ -77,12 +108,13 @@
   on:click={() => {
     deviceMenuOpen = false;
     colorMenuOpen = false;
+    drawColorMenuOpen = false;
   }}
 />
 
 <div class="flex items-center justify-between h-14 px-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 relative z-50">
   <!-- Left side - Logo and Tree Toggle -->
-  <div class="flex items-center gap-3">
+  <div class="flex items-center gap-2">
     <a href="/" class="flex items-center group">
       <img src="/stylist.png" alt="Stylist" class="w-10 h-10" loading="lazy" decoding="async" />
     </a>
@@ -97,122 +129,205 @@
         STYLIST
       </span>
     </button>
-  </div>
 
-  <!-- Center - Device and Control Buttons -->
-  <div class="flex items-center gap-2">
-    <!-- Device selector dropdown -->
-    <div class="relative">
-      <button
-        class="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 shadow-sm h-9 min-w-[11rem]"
-        aria-haspopup="listbox"
-        aria-expanded={deviceMenuOpen}
-        onclick={(e) => { e.stopPropagation(); deviceMenuOpen = !deviceMenuOpen; }}
-      >
-        {#if selectedDevice}
-          <selectedDevice.icon class="w-4 h-4 text-[var(--playground-accent)]" />
-          <div class="flex flex-col leading-tight text-left">
-            <span class="text-xs font-semibold text-gray-900 dark:text-white">
-              {selectedDevice.label}
-            </span>
-            <span class="text-[11px] text-gray-500 dark:text-gray-400">
-              {selectedDevice.description}
-            </span>
+    <!-- AI Panel button -->
+    <button
+      onclick={onToggleAIPanel}
+      class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 {showAIPanel
+        ? 'bg-[var(--playground-accent-surface)] dark:bg-[var(--playground-accent-surface-strong)] ring-2 ring-[var(--playground-accent)] shadow-[0_15px_30px_var(--playground-accent-shadow)]'
+        : 'hover:bg-[var(--playground-accent-surface)] dark:hover:bg-[var(--playground-accent-surface-strong)]'}"
+      title="AI Panel"
+    >
+      <Sparkles class="w-5 h-5 {showAIPanel ? 'text-[var(--playground-accent)]' : 'text-gray-600 dark:text-gray-400'}" />
+      <span class="text-sm font-bold {showAIPanel ? 'text-[var(--playground-accent)]' : 'text-gray-900 dark:text-white'}">
+        AI
+      </span>
+    </button>
+
+    <!-- Drawing mode button (red pencil) -->
+    <button
+      onclick={onToggleDrawingMode}
+      class="p-2 rounded-lg transition-all duration-200 {drawingMode
+        ? 'bg-red-500 text-white shadow-lg'
+        : 'text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30'}"
+      title="Drawing mode"
+    >
+      <Pencil class="w-5 h-5" />
+    </button>
+
+    <!-- Color picker (visible only in drawing mode) -->
+    {#if drawingMode}
+      <div class="relative">
+        <div
+          onclick={(e) => { e.stopPropagation(); drawColorMenuOpen = !drawColorMenuOpen; }}
+          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); drawColorMenuOpen = !drawColorMenuOpen; }}}
+          class="w-8 h-8 rounded-full border-2 shadow-sm transition-colors cursor-pointer hover:scale-110"
+          style="background-color: {drawColor}; border-color: {drawingMode ? '#ef4444' : 'currentColor'};"
+          title="Select drawing color"
+          role="button"
+          tabindex="0"
+        ></div>
+
+        <!-- Color picker menu -->
+        {#if drawColorMenuOpen}
+          <div class="absolute left-0 top-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-2xl p-2 z-50">
+            <div class="grid grid-cols-3 gap-1.5">
+              {#each drawColors as color}
+                <button
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    onChangeDrawColor?.(color.value);
+                    drawColorMenuOpen = false;
+                  }}
+                  class="w-8 h-8 rounded-md border-2 transition-all hover:scale-110 {color.value === drawColor ? 'ring-2 ring-red-500 border-red-500' : 'border-gray-300 dark:border-gray-600'}"
+                  style="background-color: {color.value};"
+                  title={color.name}
+                ></button>
+              {/each}
+            </div>
           </div>
         {/if}
-        <ChevronDown
-          class={`w-3.5 h-3.5 text-gray-500 dark:text-gray-400 transition-transform ml-auto ${deviceMenuOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-      {#if deviceMenuOpen}
-        <div
-          class="absolute top-full mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-1 z-50"
-          role="listbox"
-        >
-          {#each deviceOptions as option}
-            <button
-              class={`w-full flex items-start gap-3 px-3 py-2 rounded-lg text-left transition-colors ${option.id === currentViewport
-                ? 'bg-[var(--playground-accent-surface)] text-[var(--playground-accent)]'
-                : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-              role="option"
-              aria-selected={option.id === currentViewport}
-              onclick={(e) => { e.stopPropagation(); selectDevice(option.id); }}
-            >
-              <option.icon class="w-4 h-4 mt-0.5" />
-              <div class="flex flex-col leading-tight">
-                <span class="text-xs font-semibold">{option.label}</span>
-                <span class="text-[11px] text-gray-500 dark:text-gray-400">
-                  {option.description}
-                </span>
-              </div>
-            </button>
-          {/each}
-        </div>
-      {/if}
-    </div>
+      </div>
 
-    <!-- Device Frame Toggle -->
-    {#if currentViewport !== 'fullscreen'}
+      <!-- Close drawing mode button -->
       <button
-        class={toggleButtonClasses(showDeviceFrame)}
-        aria-pressed={showDeviceFrame}
-        title="Toggle device frame"
-        onclick={() => playgroundStore.toggleDeviceFrame()}
+        onclick={onToggleDrawingMode}
+        class="p-2 rounded-lg transition-all duration-200 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+        title="Close drawing mode"
       >
-        <span class="inline-flex h-2 w-2 rounded-full {showDeviceFrame ? 'bg-white' : 'bg-gray-400/70'}"></span>
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <rect x="4" y="3" width="16" height="18" rx="2" stroke-width="2"/>
-          <path d="M9 21h6" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <span class="text-xs font-medium">
-          Frame
-          <span class="ml-1 text-[10px] font-semibold uppercase tracking-wide">
-            {showDeviceFrame ? 'ON' : 'OFF'}
-          </span>
-        </span>
+        <X class="w-5 h-5" />
       </button>
     {/if}
 
-    <!-- Zoom controls -->
-    <div class="flex items-center gap-0.5 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 shadow-sm h-9">
-      <button
-        onclick={() => playgroundStore.zoomOut()}
-        class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-all group h-8"
-        title="Zoom out (Ctrl + -)"
-      >
-        <ZoomOut class="w-3.5 h-3.5 text-gray-600 dark:text-gray-400 group-hover:text-[var(--playground-accent)] dark:group-hover:text-[var(--playground-accent)] transition-colors" />
-      </button>
-      <span class="text-xs font-mono font-semibold text-[var(--playground-accent)] min-w-[2.5rem] text-center px-2 h-8 flex items-center justify-center">
-        {Math.round(zoom * 100)}%
-      </span>
-      <button
-        onclick={() => playgroundStore.zoomIn()}
-        class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-all group h-8"
-        title="Zoom in (Ctrl + +)"
-      >
-        <ZoomIn class="w-3.5 h-3.5 text-gray-600 dark:text-gray-400 group-hover:text-[var(--playground-accent)] dark:group-hover:text-[var(--playground-accent)] transition-colors" />
-      </button>
-    </div>
-
-    <!-- Grid Toggle -->
+    <!-- Screenshot button -->
     <button
-      class={toggleButtonClasses(showGrid)}
-      aria-pressed={showGrid}
-      title="Toggle grid"
-      onclick={() => playgroundStore.toggleGrid()}
+      onclick={onTakeScreenshot}
+      class="p-2 rounded-lg transition-all duration-200 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+      title="Take screenshot"
     >
-      <span class="inline-flex h-2 w-2 rounded-full {showGrid ? 'bg-white' : 'bg-gray-400/70'}"></span>
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-      </svg>
-      <span class="text-xs font-medium">
-        Grid
-        <span class="ml-1 text-[10px] font-semibold uppercase tracking-wide">
-          {showGrid ? 'ON' : 'OFF'}
-        </span>
-      </span>
+      <Camera class="w-5 h-5" />
     </button>
   </div>
+
+  <!-- Center - Device and Control Buttons (only visible when STYLIST is active) -->
+  {#if showComponentTree}
+    <div class="flex items-center gap-2">
+      <!-- Device selector dropdown -->
+      <div class="relative">
+        <button
+          class="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-1.5 shadow-sm h-9 min-w-[11rem]"
+          aria-haspopup="listbox"
+          aria-expanded={deviceMenuOpen}
+          onclick={(e) => { e.stopPropagation(); deviceMenuOpen = !deviceMenuOpen; }}
+        >
+          {#if selectedDevice}
+            <selectedDevice.icon class="w-4 h-4 text-[var(--playground-accent)]" />
+            <div class="flex flex-col leading-tight text-left">
+              <span class="text-xs font-semibold text-gray-900 dark:text-white">
+                {selectedDevice.label}
+              </span>
+              <span class="text-[11px] text-gray-500 dark:text-gray-400">
+                {selectedDevice.description}
+              </span>
+            </div>
+          {/if}
+          <ChevronDown
+            class={`w-3.5 h-3.5 text-gray-500 dark:text-gray-400 transition-transform ml-auto ${deviceMenuOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+        {#if deviceMenuOpen}
+          <div
+            class="absolute top-full mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl p-1 z-50"
+            role="listbox"
+          >
+            {#each deviceOptions as option}
+              <button
+                class={`w-full flex items-start gap-3 px-3 py-2 rounded-lg text-left transition-colors ${option.id === currentViewport
+                  ? 'bg-[var(--playground-accent-surface)] text-[var(--playground-accent)]'
+                  : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                role="option"
+                aria-selected={option.id === currentViewport}
+                onclick={(e) => { e.stopPropagation(); selectDevice(option.id); }}
+              >
+                <option.icon class="w-4 h-4 mt-0.5" />
+                <div class="flex flex-col leading-tight">
+                  <span class="text-xs font-semibold">{option.label}</span>
+                  <span class="text-[11px] text-gray-500 dark:text-gray-400">
+                    {option.description}
+                  </span>
+                </div>
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+
+      <!-- Device Frame Toggle -->
+      {#if currentViewport !== 'fullscreen'}
+        <button
+          class={toggleButtonClasses(showDeviceFrame)}
+          aria-pressed={showDeviceFrame}
+          title="Toggle device frame"
+          onclick={() => playgroundStore.toggleDeviceFrame()}
+        >
+          <span class="inline-flex h-2 w-2 rounded-full {showDeviceFrame ? 'bg-white' : 'bg-gray-400/70'}"></span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect x="4" y="3" width="16" height="18" rx="2" stroke-width="2"/>
+            <path d="M9 21h6" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span class="text-xs font-medium">
+            Frame
+            <span class="ml-1 text-[10px] font-semibold uppercase tracking-wide">
+              {showDeviceFrame ? 'ON' : 'OFF'}
+            </span>
+          </span>
+        </button>
+      {/if}
+
+      <!-- Zoom controls -->
+      <div class="flex items-center gap-0.5 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 shadow-sm h-9">
+        <button
+          onclick={() => playgroundStore.zoomOut()}
+          class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-all group h-8"
+          title="Zoom out (Ctrl + -)"
+        >
+          <ZoomOut class="w-3.5 h-3.5 text-gray-600 dark:text-gray-400 group-hover:text-[var(--playground-accent)] dark:group-hover:text-[var(--playground-accent)] transition-colors" />
+        </button>
+        <span class="text-xs font-mono font-semibold text-[var(--playground-accent)] min-w-[2.5rem] text-center px-2 h-8 flex items-center justify-center">
+          {Math.round(zoom * 100)}%
+        </span>
+        <button
+          onclick={() => playgroundStore.zoomIn()}
+          class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-all group h-8"
+          title="Zoom in (Ctrl + +)"
+        >
+          <ZoomIn class="w-3.5 h-3.5 text-gray-600 dark:text-gray-400 group-hover:text-[var(--playground-accent)] dark:group-hover:text-[var(--playground-accent)] transition-colors" />
+        </button>
+      </div>
+
+      <!-- Grid Toggle -->
+      <button
+        class={toggleButtonClasses(showGrid)}
+        aria-pressed={showGrid}
+        title="Toggle grid"
+        onclick={() => playgroundStore.toggleGrid()}
+      >
+        <span class="inline-flex h-2 w-2 rounded-full {showGrid ? 'bg-white' : 'bg-gray-400/70'}"></span>
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+        </svg>
+        <span class="text-xs font-medium">
+          Grid
+          <span class="ml-1 text-[10px] font-semibold uppercase tracking-wide">
+            {showGrid ? 'ON' : 'OFF'}
+          </span>
+        </span>
+      </button>
+    </div>
+  {:else}
+    <!-- Empty spacer to maintain layout when STYLIST is off -->
+    <div></div>
+  {/if}
 
   <!-- Right side - Theme toggle -->
   <div class="flex items-center gap-2">

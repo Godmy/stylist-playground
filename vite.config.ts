@@ -119,6 +119,9 @@ function createErrorLoggerPlugin() {
 // Cache for resolved paths to avoid repeated file system checks
 const resolveCache = new Map<string, string | null>();
 
+// Clear cache on config reload
+resolveCache.clear();
+
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
@@ -132,6 +135,39 @@ export default defineConfig({
 					if (!importer) return null;
 
 					const normalizedImporter = importer.replace(/\\/g, '/');
+
+					// Handle stylist-svelte/* imports from playground app
+					if (source.startsWith('stylist-svelte/')) {
+						const cacheKey = `${importer}:${source}`;
+						if (resolveCache.has(cacheKey)) {
+							return resolveCache.get(cacheKey);
+						}
+
+						const subpath = source.replace('stylist-svelte/', '');
+						const basePath = path.resolve(__dirname, '../stylist-svelte/src/lib', subpath);
+
+						// Check directory with index first, then individual files
+						const candidates = [
+							path.join(basePath, 'index.ts'),
+							path.join(basePath, 'index.js'),
+							basePath + '.ts',
+							basePath + '.js',
+							basePath + '.svelte'
+						];
+
+						for (const candidate of candidates) {
+							try {
+								if (fs.existsSync(candidate)) {
+									resolveCache.set(cacheKey, candidate);
+									return candidate;
+								}
+							} catch (e) {
+								// Continue to next candidate
+							}
+						}
+
+						resolveCache.set(cacheKey, null);
+					}
 
 					// Only handle imports from stylist-svelte package
 					if (normalizedImporter.includes('/stylist-svelte/')) {
