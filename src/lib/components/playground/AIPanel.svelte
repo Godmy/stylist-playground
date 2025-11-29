@@ -16,45 +16,46 @@
   interface Props {
     selectedProviderId?: string | null;
     onOptionSelect?: (providerId: string, optionId: string) => void;
+    onStartChat?: (providerId: 'gemini' | 'qwen' | 'claude' | 'codex') => void;
   }
 
-  let { selectedProviderId = null, onOptionSelect }: Props = $props();
+  let { selectedProviderId = null, onOptionSelect, onStartChat }: Props = $props();
 
   const aiProviders: AIProvider[] = [
     {
       id: 'claude',
       name: 'CLAUDE',
       options: [
-        { id: 'version', label: 'Версия' },
         { id: 'new-chat', label: 'Новый чат' },
-        { id: 'history', label: 'История чатов' }
+        { id: 'version', label: 'Версия' },
+        { id: 'settings', label: 'Настройки' }
       ]
     },
     {
       id: 'codex',
       name: 'CODEX',
       options: [
-        { id: 'version', label: 'Версия' },
         { id: 'new-chat', label: 'Новый чат' },
-        { id: 'history', label: 'История чатов' }
+        { id: 'version', label: 'Версия' },
+        { id: 'settings', label: 'Настройки' }
       ]
     },
     {
       id: 'gemini',
       name: 'GEMINI',
       options: [
-        { id: 'version', label: 'Версия' },
         { id: 'new-chat', label: 'Новый чат' },
-        { id: 'history', label: 'История чатов' }
+        { id: 'version', label: 'Версия' },
+        { id: 'settings', label: 'Настройки' }
       ]
     },
     {
       id: 'qwen',
       name: 'QWEN',
       options: [
-        { id: 'version', label: 'Версия' },
         { id: 'new-chat', label: 'Новый чат' },
-        { id: 'history', label: 'История чатов' }
+        { id: 'version', label: 'Версия' },
+        { id: 'settings', label: 'Настройки' }
       ]
     }
   ];
@@ -73,6 +74,11 @@
 
   function handleOptionClick(providerId: string, optionId: string) {
     onOptionSelect?.(providerId, optionId);
+
+    // Special handling for new-chat option
+    if (optionId === 'new-chat') {
+      onStartChat?.(providerId as 'gemini' | 'qwen' | 'claude' | 'codex');
+    }
   }
 </script>
 
@@ -83,7 +89,8 @@
     background: white;
   }
 
-  .dark .ai-panel-container {
+  /* Dark mode styles */
+  :global(.dark) .ai-panel-container {
     background: rgb(17 24 39);
   }
 
@@ -95,7 +102,7 @@
     background: rgb(249 250 251);
   }
 
-  .dark .provider-header:hover {
+  :global(.dark) .provider-header:hover {
     background: rgb(31 41 55);
   }
 
@@ -107,7 +114,7 @@
     background: rgb(243 244 246);
   }
 
-  .dark .option-item:hover {
+  :global(.dark) .option-item:hover {
     background: rgb(55 65 81);
   }
 

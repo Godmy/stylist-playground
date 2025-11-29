@@ -91,11 +91,20 @@ export const getStoryById = async (id: string): Promise<Story | undefined> => {
 
   // If component is a function (lazy loader), load it
   if (typeof story.component === 'function') {
-    const module = await story.component();
-    return {
-      ...story,
-      component: module.default
-    };
+    try {
+      const module = await story.component();
+      return {
+        ...story,
+        component: module.default
+      };
+    } catch (error) {
+      console.error(`Failed to load component: ${story.componentName}`, error);
+      // Return story with error information
+      throw new Error(
+        `Не удалось загрузить компонент "${story.componentName}". ` +
+        `Возможно, компонент содержит синтаксические ошибки или отсутствуют зависимости.`
+      );
+    }
   }
 
   return story;

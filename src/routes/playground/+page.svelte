@@ -13,6 +13,7 @@
   import AnimatedBackground from '../../lib/components/playground/AnimatedBackground.svelte';
   import DrawingOverlay from '../../lib/components/playground/DrawingOverlay.svelte';
   import AIPanel from '../../lib/components/playground/AIPanel.svelte';
+  import AIAssistant from '../../lib/components/playground/AIAssistant.svelte';
 
   const messages = {
     loading: '\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u043c \u043a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442...',
@@ -50,6 +51,10 @@
   let loadError = $state<string | null>(null);
   let storyLoadToken = 0;
 
+  // AI chat state
+  let showAIChatWindow = $state(false);
+  let activeAIProvider = $state<'gemini' | 'qwen' | 'claude' | 'codex'>('gemini');
+
   // Handle component selection from tree
   async function handleComponentSelect(storyId: string) {
     if (!storyId) return;
@@ -83,7 +88,13 @@
       }
 
       console.error(messages.loadErrorLog, error);
-      loadError = messages.loadError;
+
+      // Extract user-friendly error message
+      if (error instanceof Error) {
+        loadError = error.message;
+      } else {
+        loadError = messages.loadError;
+      }
     } finally {
       if (currentToken === storyLoadToken) {
         isStoryLoading = false;
@@ -158,6 +169,10 @@
         <AIPanel
           onOptionSelect={(providerId, optionId) => {
             console.log('Selected:', providerId, optionId);
+          }}
+          onStartChat={(providerId) => {
+            activeAIProvider = providerId;
+            showAIChatWindow = true;
           }}
         />
       </div>
@@ -248,6 +263,14 @@
     <DrawingOverlay
       {drawColor}
       onClose={() => drawingModeContext && (drawingModeContext.value = false)}
+    />
+  {/if}
+
+  <!-- AI Chat window -->
+  {#if showAIChatWindow}
+    <AIAssistant
+      providerId={activeAIProvider}
+      onClose={() => (showAIChatWindow = false)}
     />
   {/if}
 </div>
