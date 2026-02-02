@@ -10,9 +10,9 @@
     GenericCodeViewer,
     Canvas,
     EnhancedExportPanel
-  } from '@stylist-svelte/playground';
+  } from '../../../lib/components';
   import { keyboardShortcuts } from '../../../lib/utils/keyboard-shortcuts';
-  import { generateComponentCode } from '../../../lib/utils/code-generator';
+  import { generateCode } from '@stylist-svelte/utils/code-preview';
 
   interface Props {
     data: {
@@ -38,12 +38,9 @@
 
   // Generate code for current props
   const generatedCode = $derived.by(() => {
-    return generateComponentCode({
+    return generateCode({
       componentName: data.story.componentName,
-      category: data.story.category,
-      props: playgroundStore.controlValues, // Use controlValues instead of currentProps
-      includeImport: true,
-      includeScript: true
+      props: playgroundStore.controlValues
     });
   });
 
@@ -145,8 +142,9 @@
   <Canvas>
     {#if data.story.component}
       {@const StoryComponent = data.story.component}
+      {@const storyProps = playgroundStore.controlValues}
       {#key data.story.id}
-        <StoryComponent />
+        <StoryComponent {...storyProps} />
       {/key}
     {/if}
   </Canvas>

@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { playgroundStore, colorSchemes, type ColorSchemeId, type PlaygroundColorScheme } from 'stylist-svelte/playground';
+  import { playgroundStore } from './stores/playground.svelte';
+  import { colorSchemes, type ColorSchemeId, type PlaygroundColorScheme } from './utils/colorSchemes';
   import { ZoomIn, ZoomOut, Smartphone, Tablet, Monitor, ChevronDown, Check, Camera, Sparkles, Pencil, X } from 'lucide-svelte';
 
   interface Props {

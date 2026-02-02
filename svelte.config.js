@@ -12,12 +12,12 @@ const config = {
 	kit: {
 		adapter: adapter(),
 		alias: {
-			// Playground's own $lib
+			// Локальный playground-код
 			$lib: path.resolve(__dirname, './src/lib'),
-			// Alias for stylist-svelte components
-			'@stylist-svelte': path.resolve(__dirname, '../stylist-svelte/src/lib'),
-			// Lightweight playground store import
-			'@stylist-svelte/playground': path.resolve(__dirname, '../stylist-svelte/src/lib/playground')
+			$playground: path.resolve(__dirname, './src/lib'),
+			// Алиас на исходники библиотеки для hot reload
+			$stylist: path.resolve(__dirname, '../stylist-svelte/src/lib'),
+			'@stylist-svelte': path.resolve(__dirname, '../stylist-svelte/src/lib')
 		}
 	}
 };

@@ -1,15 +1,23 @@
 import { defineConfig } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
+import { watchAndRun } from 'vite-plugin-watch-and-run';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 
 const LOG_DIR = path.resolve(__dirname, 'logs/dev-errors');
+const COMPONENT_LOG_ROOT = path.join(LOG_DIR, 'components');
+
+function ensureDir(dirPath: string) {
+	if (!fs.existsSync(dirPath)) {
+		fs.mkdirSync(dirPath, { recursive: true });
+	}
+}
 
 function ensureLogDir() {
-	if (!fs.existsSync(LOG_DIR)) {
-		fs.mkdirSync(LOG_DIR, { recursive: true });
-	}
+	ensureDir(LOG_DIR);
+	ensureDir(COMPONENT_LOG_ROOT);
 }
 
 function sanitizeSegment(value: string, fallback = 'log') {
@@ -49,6 +57,47 @@ function formatArgs(args: unknown[]) {
 		.trim();
 }
 
+function resolveComponentLogLocation(message: string, stack?: string) {
+	const haystack = `${message}\n${stack ?? ''}`.replace(/\\/g, '/');
+	const componentMatch = haystack.match(
+		/stylist-svelte\/src\/lib\/components\/(atoms|molecules|organisms)\/([^\s:'"]+\.(svelte|ts|js|tsx|jsx))/i
+	);
+
+	if (componentMatch) {
+		const [, group, filePath] = componentMatch;
+		const baseName = path.basename(filePath);
+		const slug = sanitizeSegment(baseName.replace(/\./g, '-'), 'component');
+		return {
+			targetDir: path.join(COMPONENT_LOG_ROOT, group.toLowerCase()),
+			filename: `${slug}.log`
+		};
+	}
+
+	const fallbackSlug = extractFileIdentifier(message);
+	return {
+		targetDir: COMPONENT_LOG_ROOT,
+		filename: `${fallbackSlug}.log`
+	};
+}
+
+function buildComponentLogBody(timestamp: string, message: string, stack?: string) {
+	const cleanedMessage = message.trim() || 'Unknown error';
+	const cleanedStack = stack?.trim() || '(no stack provided)';
+
+	const entries = [
+		{ label: 'message', content: cleanedMessage },
+		{ label: 'stack', content: cleanedStack }
+	];
+
+	return entries
+		.map(({ label, content }) => {
+			const sha = crypto.createHash('sha256').update(content, 'utf-8').digest('hex');
+			return `[${timestamp}] ${label} | sha256=${sha}\n${content}`;
+		})
+		.join('\n---\n')
+		.concat('\n');
+}
+
 function createErrorLoggerPlugin() {
 	let sessionFile: string | null = null;
 	let lastSignature = '';
@@ -67,6 +116,8 @@ function createErrorLoggerPlugin() {
 
 		ensureLogDir();
 		const timestamp = new Date().toISOString();
+		const { targetDir, filename } = resolveComponentLogLocation(message, stack);
+		ensureDir(targetDir);
 
 		if (!sessionFile) {
 			const sessionStamp = timestamp.replace(/[:.]/g, '-');
@@ -78,11 +129,9 @@ function createErrorLoggerPlugin() {
 			);
 		}
 
-		const fileSlug = extractFileIdentifier(message);
-		const messageSlug = sanitizeSegment(message.split('\n')[0] ?? 'error');
-		const filename = `${timestamp.replace(/[:.]/g, '-')}__${fileSlug}__${messageSlug}.log`;
 		const entry = `[${timestamp}] ${message}\n${stack ?? ''}\n`;
-		fs.writeFileSync(path.join(LOG_DIR, filename), entry, 'utf-8');
+		const componentLogBody = buildComponentLogBody(timestamp, message, stack);
+		fs.writeFileSync(path.join(targetDir, filename), componentLogBody, 'utf-8');
 		fs.appendFileSync(sessionFile, `\n${entry}\n---\n`, 'utf-8');
 	};
 
@@ -125,6 +174,14 @@ resolveCache.clear();
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
+		watchAndRun([
+			{
+				watch: ['logs/dev-errors/**/*.log'],
+				run: 'node scripts/process-logs.mjs',
+				delay: 500,
+				quiet: false
+			}
+		]),
 		createErrorLoggerPlugin(),
 		{
 			name: 'stylist-svelte-lib-resolver',

@@ -66,7 +66,8 @@
 
       // Detailed error message
       if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
-        error = `Cannot connect to ${providerNames[providerId]} server. Please check:\n1. Server is running\n2. URL is correct: ${aiClient.getSessionId ? 'configured' : 'not configured'}\n3. CORS is enabled`;
+        const sessionId = typeof aiClient.getSessionId === 'function' ? aiClient.getSessionId() : undefined;
+        error = `Cannot connect to ${providerNames[providerId]} server. Please check:\n1. Server is running\n2. URL is correct: ${sessionId ? 'configured' : 'not configured'}\n3. CORS is enabled`;
       } else {
         error = err instanceof Error ? err.message : 'Failed to get response from AI';
       }

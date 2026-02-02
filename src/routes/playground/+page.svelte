@@ -1,11 +1,10 @@
 <script lang="ts">
+  import { playgroundStore } from '../../lib/components/stores/playground.svelte';
+  import Canvas from '../../lib/components/playground/Canvas.svelte';
+  import ComponentTree from '../../lib/components/playground/ComponentTree.svelte';
+  import type { StoryConfig } from '../../lib/components/types';
   import {
-    playgroundStore,
-    Canvas,
-    ComponentTree
-  } from '@stylist-svelte/playground';
-  import { onMount, getContext } from 'svelte';
-  import {
+    allStories,
     groupedStories,
     getStoryById,
     type Story as PlaygroundStory
@@ -14,38 +13,68 @@
   import DrawingOverlay from '../../lib/components/playground/DrawingOverlay.svelte';
   import AIPanel from '../../lib/components/playground/AIPanel.svelte';
   import AIAssistant from '../../lib/components/playground/AIAssistant.svelte';
+  import { onMount } from 'svelte';
 
   const messages = {
-    loading: '\u0417\u0430\u0433\u0440\u0443\u0436\u0430\u0435\u043c \u043a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442...',
+    loading: 'Загружаем компонент...',
     loadErrorDescription:
-      '\u041f\u0440\u043e\u0432\u0435\u0440\u044c\u0442\u0435 \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u0435 \u0438\u043b\u0438 \u043f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0432\u044b\u0431\u0440\u0430\u0442\u044c \u0434\u0440\u0443\u0433\u043e\u0439 \u044d\u043b\u0435\u043c\u0435\u043d\u0442 \u0434\u0435\u0440\u0435\u0432\u0430.',
-    retryButton: '\u041f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0443',
+      'Проверьте подключение или попробуйте выбрать другой элемент дерева.',
+    retryButton: 'Повторить загрузку',
     noComponentDescription:
-      '\u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u043a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442 \u0438\u0437 \u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a\u0438 \u0438 \u043d\u0430\u0447\u0438\u043d\u0430\u0439\u0442\u0435 \u044d\u043a\u0441\u043f\u0435\u0440\u0438\u043c\u0435\u043d\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441 \u0436\u0438\u0432\u044b\u043c\u0438 \u043a\u043e\u043d\u0442\u0440\u043e\u043b\u0430\u043c\u0438 \u0438 \u044d\u043a\u0441\u043f\u043e\u0440\u0442\u043e\u043c.',
-    selectButton: '\u0412\u044b\u0431\u0440\u0430\u0442\u044c \u043a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442',
-    notFound: '\u041a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d',
-    loadError: '\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442',
+      'Выберите компонент из библиотеки и начинайте экспериментировать с живыми контролами и экспортом.',
+    selectButton: 'Выбрать компонент',
+    notFound: 'Компонент не найден',
+    loadError: 'Не удалось загрузить компонент',
     loadErrorLog:
-      '\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044c \u043a\u043e\u043c\u043f\u043e\u043d\u0435\u043d\u0442 \u043f\u0435\u0441\u043e\u0447\u043d\u0438\u0446\u044b'
+      'Не удалось загрузить компонент песочницы'
   };
 
-  // Get component tree visibility from layout context
-  const componentTreeContext = getContext<{ value: boolean }>('showComponentTree');
-  let showComponentTree = $derived(componentTreeContext?.value ?? false);
+  // Populate the central store with all the stories found by stories.ts
+  // ВАЖНО: Компоненты регистрируются БЕЗ загрузки - они будут загружены лениво при выборе
+  onMount(() => {
+    if (allStories && allStories.length > 0) {
+      allStories.forEach((story) => {
+        const storyConfig: StoryConfig = {
+          id: story.id,
+          title: story.componentName,
+          component: null, // Компонент будет загружен лениво при выборе в handleComponentSelect
+          category: story.category
+          // controls are not part of the static analysis, they are registered by the Story component itself at runtime
+        };
+        playgroundStore.registerStory(storyConfig);
+      });
 
-  // Get AI panel visibility from layout context
-  const aiPanelContext = getContext<{ value: boolean }>('showAIPanel');
-  let showAIPanel = $derived(aiPanelContext?.value ?? false);
+      // If a story was loaded from URL/localStorage, re-trigger setCurrentStory
+      // to ensure controls are initialized now that the stories are registered.
+      const initialStoryId = playgroundStore.state.currentStoryId;
+      if (initialStoryId) {
+        // Defer to next tick to ensure all stories are registered
+        setTimeout(() => {
+          playgroundStore.setCurrentStory(initialStoryId);
+          // Загружаем компонент сразу, если есть initialStoryId
+          handleComponentSelect(initialStoryId);
+        }, 0);
+      }
+    }
 
-  // Get drawing mode context
-  const drawingModeContext = getContext<{ value: boolean }>('drawingMode');
-  let drawingMode = $derived(drawingModeContext?.value ?? false);
+    // Auto-open component tree when landing on /playground without a specific component
+    // This provides a better UX than showing an empty welcome screen
+    if (!playgroundStore.state.currentStoryId && !playgroundStore.uiState.componentTreeOpen) {
+      // Очищаем любую предвыборку перед открытием дерева
+      selectedStory = null;
+      playgroundStore.toggleComponentTree();
+    }
+  });
 
-  const drawColorContext = getContext<{ value: string }>('drawColor');
-  let drawColor = $derived(drawColorContext?.value ?? '#ef4444');
+  // Derive UI state from the central store
+  let showComponentTree = $derived(playgroundStore.uiState.componentTreeOpen);
+  let showAIPanel = $derived(playgroundStore.uiState.aiPanelOpen);
 
-  // Selected component state
-  let selectedStoryId = $state<string | null>(null);
+  // TODO: Centralize drawing mode state in the store as well.
+  let drawingMode = $state(false);
+  let drawColor = $state('#ef4444');
+
+  // Story loading state remains local to this page to avoid circular dependencies
   let selectedStory = $state<PlaygroundStory | null>(null);
   let isStoryLoading = $state(false);
   let loadError = $state<string | null>(null);
@@ -58,11 +87,13 @@
   // Handle component selection from tree
   async function handleComponentSelect(storyId: string) {
     if (!storyId) return;
-    if (storyId === selectedStoryId && selectedStory) {
+
+    // Если компонент уже загружен и отображается, не перезагружаем
+    if (storyId === playgroundStore.state.currentStoryId && selectedStory && selectedStory.component) {
       return;
     }
 
-    selectedStoryId = storyId;
+    playgroundStore.setCurrentStory(storyId);
     selectedStory = null;
     loadError = null;
     isStoryLoading = true;
@@ -70,6 +101,7 @@
     const currentToken = ++storyLoadToken;
 
     try {
+      // getStoryById загружает компонент лениво - только при первом запросе
       const story = await getStoryById(storyId);
 
       if (currentToken !== storyLoadToken) {
@@ -82,6 +114,16 @@
       }
 
       selectedStory = story;
+
+      // Update store with loaded controls and reapply defaults
+      playgroundStore.registerStory({
+        id: story.id,
+        title: story.componentName,
+        component: story.component,
+        category: story.category,
+        controls: story.controls
+      });
+      playgroundStore.setCurrentStory(story.id);
     } catch (error) {
       if (currentToken !== storyLoadToken) {
         return;
@@ -95,17 +137,15 @@
       } else {
         loadError = messages.loadError;
       }
+
+      // Clear current story to prevent auto-reload loop on errors
+      playgroundStore.setCurrentStory(null);
     } finally {
       if (currentToken === storyLoadToken) {
         isStoryLoading = false;
       }
     }
   }
-
-  // Initialize playground
-  onMount(() => {
-    playgroundStore.init();
-  });
 </script>
 
 <style>
@@ -155,7 +195,7 @@
         <ComponentTree
           {groupedStories}
           onComponentSelect={handleComponentSelect}
-          selectedStoryId={selectedStoryId}
+          selectedStoryId={playgroundStore.state.currentStoryId || null}
         />
       </div>
     {/if}
@@ -181,7 +221,7 @@
     <!-- Main content -->
     <div class="flex-1 h-full flex flex-col overflow-hidden">
       {#if showComponentTree}
-        <Canvas component={selectedStory?.component}>
+        <Canvas component={selectedStory?.component} props={playgroundStore.controlValues}>
           {#if isStoryLoading}
             <div class="flex flex-col items-center justify-center gap-4 min-h-[400px] text-center">
               <div class="w-12 h-12 rounded-full border-4 border-t-transparent animate-spin accent-spinner"></div>
@@ -195,9 +235,9 @@
               <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md">
                 {messages.loadErrorDescription}
               </p>
-              {#if selectedStoryId}
+              {#if playgroundStore.state.currentStoryId}
                 <button
-                  onclick={() => selectedStoryId && handleComponentSelect(selectedStoryId)}
+                  onclick={() => playgroundStore.state.currentStoryId && handleComponentSelect(playgroundStore.state.currentStoryId)}
                   class="inline-flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-900 rounded-lg font-medium accent-outline-button"
                 >
                   {messages.retryButton}
@@ -217,7 +257,7 @@
               </div>
 
               <button
-                onclick={() => (window as any).__toggleComponentTree?.()}
+                onclick={() => playgroundStore.toggleComponentTree()}
                 class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#FF3E00] to-[#FF6B35] text-white rounded-lg font-medium hover:shadow-xl hover:shadow-[#FF3E00]/30 transition-all duration-200 hover:scale-105"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,7 +283,7 @@
               </div>
 
               <button
-                onclick={() => (window as any).__toggleComponentTree?.()}
+                onclick={() => playgroundStore.toggleComponentTree()}
                 class="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-[#FF3E00] to-[#FF6B35] text-white rounded-xl font-semibold text-lg hover:shadow-2xl hover:shadow-[#FF3E00]/40 transition-all duration-200 hover:scale-105"
               >
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,7 +302,7 @@
   {#if drawingMode}
     <DrawingOverlay
       {drawColor}
-      onClose={() => drawingModeContext && (drawingModeContext.value = false)}
+      onClose={() => (drawingMode = false)}
     />
   {/if}
 

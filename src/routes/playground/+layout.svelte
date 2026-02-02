@@ -3,6 +3,7 @@
   import PlaygroundHeader from '../../lib/components/PlaygroundHeader.svelte';
   import Toast from '../../lib/components/playground/Toast.svelte';
   import { onMount, setContext } from 'svelte';
+  import { playgroundStore } from '../../lib/components/stores/playground.svelte';
 
   type Props = {
     children: Snippet;
@@ -10,11 +11,11 @@
 
   let { children }: Props = $props();
 
-  // Component tree visibility
-  let showComponentTree = $state(false);
+  // Component tree visibility - синхронизировано с глобальным стором
+  let showComponentTree = $derived(playgroundStore.uiState.componentTreeOpen);
 
-  // AI Panel visibility
-  let showAIPanel = $state(false);
+  // AI Panel visibility - синхронизировано с глобальным стором
+  let showAIPanel = $derived(playgroundStore.uiState.aiPanelOpen);
 
   // Drawing mode state
   let drawingMode = $state(false);
@@ -27,12 +28,26 @@
   // Set context for child components to access
   setContext('showComponentTree', {
     get value() { return showComponentTree; },
-    set value(v: boolean) { showComponentTree = v; }
+    set value(v: boolean) {
+      // Изменяем через глобальный стор
+      if (v && !playgroundStore.uiState.componentTreeOpen) {
+        playgroundStore.toggleComponentTree();
+      } else if (!v && playgroundStore.uiState.componentTreeOpen) {
+        playgroundStore.toggleComponentTree();
+      }
+    }
   });
 
   setContext('showAIPanel', {
     get value() { return showAIPanel; },
-    set value(v: boolean) { showAIPanel = v; }
+    set value(v: boolean) {
+      // Изменяем через глобальный стор
+      if (v && !playgroundStore.uiState.aiPanelOpen) {
+        playgroundStore.toggleAIPanel();
+      } else if (!v && playgroundStore.uiState.aiPanelOpen) {
+        playgroundStore.toggleAIPanel();
+      }
+    }
   });
 
   setContext('drawingMode', {
@@ -46,11 +61,11 @@
   });
 
   function toggleComponentTree() {
-    showComponentTree = !showComponentTree;
+    playgroundStore.toggleComponentTree();
   }
 
   function toggleAIPanel() {
-    showAIPanel = !showAIPanel;
+    playgroundStore.toggleAIPanel();
   }
 
   function toggleDrawingMode() {
@@ -177,7 +192,12 @@
     // Make functions available globally for header to call
     (window as any).__toggleComponentTree = toggleComponentTree;
     (window as any).__setComponentTreeState = (open: boolean) => {
-      showComponentTree = open;
+      // Синхронизируем с глобальным стором
+      if (open && !playgroundStore.uiState.componentTreeOpen) {
+        playgroundStore.toggleComponentTree();
+      } else if (!open && playgroundStore.uiState.componentTreeOpen) {
+        playgroundStore.toggleComponentTree();
+      }
     };
   });
 </script>

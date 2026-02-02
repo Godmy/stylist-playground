@@ -1,7 +1,9 @@
 <script lang="ts">
   import '../app.css';
   import { Moon, Sun, Home } from 'lucide-svelte';
-  import { playgroundStore } from '@stylist-svelte/playground';
+  import { playgroundStore } from '../lib/components/stores/playground.svelte';
+  import { ThemeProvider } from '@stylist-svelte';
+  import type { ThemeName } from '@stylist-svelte/design-system/themes';
   import { page } from '$app/stores';
   import type { Snippet } from 'svelte';
 
@@ -17,37 +19,19 @@
     playgroundStore.init();
   }
 
-  // Reactive dark mode state
+  // Reactive state from the centralized store
   let darkMode = $derived(playgroundStore.state.darkMode);
+  let componentTreeOpen = $derived(playgroundStore.uiState.componentTreeOpen);
 
   // Check if on playground page
   let isPlaygroundPage = $derived($page.url.pathname.startsWith('/playground'));
 
-  // Component tree state (synced with playground page)
-  let componentTreeOpen = $state(false);
+  // Sync theme with playground dark mode
+  let currentTheme: ThemeName = $derived(darkMode ? 'dark' : 'light');
 
-  function toggleDarkMode() {
-    console.log('Layout: Toggling dark mode. Current:', playgroundStore.state.darkMode);
-    playgroundStore.toggleDarkMode();
-    console.log('Layout: After toggle:', playgroundStore.state.darkMode);
-    console.log('Layout: HTML class list:', document.documentElement.classList.toString());
-  }
-
-  // Export toggle function for playground page to use
-  if (typeof window !== 'undefined') {
-    (window as any).__toggleComponentTree = () => {
-      componentTreeOpen = !componentTreeOpen;
-      const event = new CustomEvent('toggle-component-tree', { detail: { open: componentTreeOpen } });
-      window.dispatchEvent(event);
-    };
-
-    // Listen for state updates from playground page
-    (window as any).__setComponentTreeState = (open: boolean) => {
-      componentTreeOpen = open;
-    };
-  }
 </script>
 
+<ThemeProvider initialTheme={currentTheme}>
 <div class="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
   <!-- Simple top nav (hidden on playground pages) -->
   {#if !isPlaygroundPage}
@@ -63,7 +47,7 @@
           {#if isPlaygroundPage}
             <!-- STYLIST text as toggle button (only on playground pages) -->
             <button
-              onclick={() => (window as any).__toggleComponentTree?.()}
+              onclick={() => playgroundStore.toggleComponentTree()}
               class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 {componentTreeOpen
                 ? 'bg-[var(--playground-accent-surface)] dark:bg-[var(--playground-accent-surface-strong)] ring-2 ring-[var(--playground-accent)] shadow-[0_15px_30px_var(--playground-accent-shadow)]'
                 : 'hover:bg-[var(--playground-accent-surface)] dark:hover:bg-[var(--playground-accent-surface-strong)]'}"
@@ -89,7 +73,10 @@
         </div>
 
         <div class="flex items-center gap-4">
-          <a href="/components" class="text-sm font-medium hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+          <a
+            href="/components"
+            class="text-sm font-medium transition-colors {$page.url.pathname === '/components' ? 'text-indigo-600 dark:text-indigo-400 font-semibold' : 'text-gray-600 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400'}"
+          >
             Components
           </a>
 
@@ -124,9 +111,8 @@
             </a>
 
             <button
-              onclick={toggleDarkMode}
-              class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              aria-label="Toggle dark mode"
+              onclick={() => playgroundStore.toggleDarkMode()}
+              class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transitions" aria-label="Toggle dark mode"
             >
               {#if darkMode}
                 <Sun class="w-5 h-5" />
@@ -146,3 +132,4 @@
     {@render children()}
   </div>
 </div>
+</ThemeProvider>

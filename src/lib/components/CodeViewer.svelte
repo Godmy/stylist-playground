@@ -1,7 +1,7 @@
-﻿<script lang="ts">
+<script lang="ts">
   import { onMount } from 'svelte';
-  import { notificationActions } from '../stores/notifications';
-  import { generateCode, getLanguageForFramework } from '../utils/codeGenerator';
+  import { playgroundStore } from './stores/playground.svelte';
+  import { generateCode } from '$stylist/utils/code-preview';
 
   const {
     code = '',
@@ -20,29 +20,18 @@
   let highlightedCode = $state('');
   let isLoading = $state(true);
   let currentTheme = $state(theme);
-  // Only Svelte - removed React/Vue support
-  let codeFormat = $state<'svelte'>('svelte');
   let darkMode = $state(false);
   let highlightSequence = 0;
   let shikiLoader: Promise<typeof import('shiki')> | null = null;
 
   const generatedCode = $derived.by(() => {
     if (componentName && Object.keys(props).length > 0) {
-      return generateCode({
-        componentName,
-        props,
-        framework: codeFormat
-      });
+      return generateCode({ componentName, props });
     }
     return code;
   });
 
-  const currentLanguage = $derived.by(() => {
-    if (componentName) {
-      return getLanguageForFramework(codeFormat);
-    }
-    return language;
-  });
+  const currentLanguage = $derived.by(() => (componentName ? 'svelte' : language));
   
   $effect(() => {
     const codeSnippet = generatedCode;
@@ -99,10 +88,10 @@
     try {
       const codeToCopy = generatedCode;
       await navigator.clipboard.writeText(codeToCopy);
-      notificationActions.success('success');
+      playgroundStore.success('Код скопирован');
     } catch (err) {
       console.error('error2', err);
-      notificationActions.error('error3');
+      playgroundStore.error('Не удалось скопировать код');
     }
   };
 
@@ -121,10 +110,10 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      notificationActions.success('success');
+      playgroundStore.success('Файл загружен');
     } catch (err) {
       console.error('error4', err);
-      notificationActions.error('error5');
+      playgroundStore.error('Не удалось загрузить файл');
     }
   };
   
@@ -152,43 +141,43 @@
     </div>
   </div>
   
-  <!-- РџР°РЅРµР»СЊ РёРЅСЃС‚СЂСѓРјРµРЅС‚РѕРІ -->
+  <!-- Панель инструментов -->
   <div class="code-toolbar flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
     <div class="text-xs text-gray-500 dark:text-gray-400">
-      {currentLanguage} вЂў {generatedCode.split('\n').length} СЃС‚СЂРѕРє
+      {currentLanguage} • {generatedCode.split('\n').length} строк
       {#if componentName}
-        вЂў Р”РёРЅР°РјРёС‡РµСЃРєР°СЏ РіРµРЅРµСЂР°С†РёСЏ
+        • Динамическая генерация
       {/if}
     </div>
     <div class="flex space-x-2">
       <button
         onclick={copyCode}
         class="text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-2 py-1 rounded"
-        title="РљРѕРїРёСЂРѕРІР°С‚СЊ РєРѕРґ"
+        title="Копировать код"
       >
-        РљРѕРїРёСЂРѕРІР°С‚СЊ
+        Копировать
       </button>
       <button
         onclick={downloadCode}
         class="text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-2 py-1 rounded"
-        title="РЎРєР°С‡Р°С‚СЊ С„Р°Р№Р»"
+        title="Скачать файл"
       >
-        РЎРєР°С‡Р°С‚СЊ
+        Скачать
       </button>
     </div>
   </div>
   
-  <!-- РљРѕРЅС‚РµР№РЅРµСЂ РґР»СЏ РїРѕРґСЃРІРµС‡РµРЅРЅРѕРіРѕ РєРѕРґР° -->
+  <!-- Контейнер для подсвеченного кода -->
   <div class="code-content overflow-auto max-h-96">
     {#if isLoading}
       <div class="p-4 text-center text-gray-500 dark:text-gray-400">
-        Р—Р°РіСЂСѓР·РєР° РїРѕРґСЃРІРµС‚РєРё РєРѕРґР°...
+        Загрузка подсветки кода...
       </div>
     {:else if highlightedCode}
       {@html highlightedCode}
     {:else}
       <div class="p-4 text-gray-500 dark:text-gray-400">
-        РќРµС‚ РєРѕРґР° РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ
+        Нет кода для отображения
       </div>
     {/if}
   </div>

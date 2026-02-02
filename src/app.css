@@ -1,6 +1,7 @@
-/* Import component library styles - using workspace path first */
-@import '../../stylist-svelte/dist/styles/design-tokens.css';
-@import '../../stylist-svelte/dist/styles/variables.css';
+/* Tailwind needs to scan both the playground and the shared library sources */
+@source "./**/*.{svelte,ts,js}";
+@source "../../stylist-svelte/src/**/*.{svelte,ts,js}";
+@source "../../stylist-svelte/dist/**/*.{svelte,ts,js}";
 
 @import 'tailwindcss/theme' layer(theme);
 
