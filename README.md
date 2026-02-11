@@ -1,140 +1,118 @@
-# Stylist Playground
+﻿# Stylist Playground
 
-Interactive development and testing environment for [stylist-svelte](../stylist-svelte) components.
-
-**Note**: This project is part of the Stylist ecosystem. See [ECOSYSTEM_ARCHITECTURE.md](../../ECOSYSTEM_ARCHITECTURE.md) for details on the architecture and responsibilities of each project.
+Interactive SvelteKit environment for developing, validating, and documenting `stylist-svelte` components.
 
 ## Purpose
 
-Stylist Playground serves as:
+`stylist-playground` is used for:
 
-1. **Interactive Development Environment** – test components with live prop controls and real-time feedback.
-2. **Component Documentation** – generate examples and code snippets for component usage.
-3. **Design QA** – review visual states and theme variations before shipping to production.
-4. **AI Integration** – provide a controlled environment for automated component testing.
-5. **Story Management** – organize and manage component examples and use cases.
+1. Interactive component development with live controls.
+2. Visual QA for variants, states, and themes.
+3. Story-based documentation and API exploration.
+4. Debugging via URL state, presets, history, and runtime logs.
+5. Safe experimentation without touching production application code.
 
-## Features
+## What Is Included
 
-- Full SvelteKit application with Tailwind CSS preconfigured.
-- Hot Module Replacement for quick feedback loops.
-- Access to the shared UI library through `workspace:*` dependency.
+- Full SvelteKit app with Tailwind CSS v4.
+- Integration with `stylist-svelte` via workspace dependency.
+- Local playground store and utility modules.
+- Story canvas, side panels, toolbar, and bottom control area.
+- Built-in dev logging pipeline for component/runtime errors.
 
-## Getting Started
+## Quick Start
 
 ### Prerequisites
 
 - Node.js 18+
-- yarn (workspace mode)
+- Yarn
 
-### Installation
+### Install and run
 
 ```bash
-# From repository root
+# from repository root
 yarn install
 
-# Start development server
-cd packages/stylist-playground
+# run playground
+cd stylist-playground
 yarn dev
-
-# Open http://localhost:5173
 ```
 
-### Library Integration
-
-This playground uses the library store from `@stylist-svelte/playground`. See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed information about:
-
-- How the library is connected
-- Import aliases and paths
-- Store management
-- Theme system
-- Performance optimizations
-
-## Project Structure
-
-```
-stylist/
-├── src/
-│   ├── routes/            # SvelteKit pages
-│   │   ├── +layout.svelte # Root layout
-│   │   └── +page.svelte   # Home page
-│   ├── app.css            # Global styles
-│   ├── app.d.ts           # Type declarations
-│   └── app.html           # HTML template
-├── svelte.config.js       # Svelte configuration (adapter-node)
-├── vite.config.ts         # Vite configuration
-├── tsconfig.json          # TypeScript config
-└── package.json
-```
-
-## Usage
-
-Import components from `stylist-svelte` and iterate directly in Svelte pages:
-
-```svelte
-<script lang="ts">
-  import { Button, Input, Modal } from 'stylist-svelte';
-
-  let name = $state('');
-  let showModal = $state(false);
-</script>
-
-<div class="p-8 space-y-4">
-  <Input
-    bind:value={name}
-    label="Your Name"
-    placeholder="Enter your name"
-  />
-
-  <Button onclick={() => (showModal = true)} variant="primary">
-    Open Modal
-  </Button>
-
-  {#if showModal}
-    <Modal bind:open={showModal}>
-      <h2>Hello {name}!</h2>
-    </Modal>
-  {/if}
-</div>
-```
-
-## Development Workflow
-
-1. **Develop** – update components in `stylist-svelte`.
-2. **Test** – exercise changes inside this playground.
-3. **Document** – record usage notes alongside the components or in shared docs.
-4. **Iterate** – refine based on manual or automated feedback.
-
-## AI Integration
-
-The playground is designed to be AI-friendly:
-
-- Self-contained environment with clear examples.
-- Simple command surface (`npm run dev`, `npm run build`, etc.).
-- No external tooling requirements.
-
-Agents can use it to learn component APIs, explore variations, and validate implementations without touching production code.
+Open: `http://localhost:5173`
 
 ## Scripts
 
 ```bash
-# Development
-npm run dev      # Start dev server
-npm run build    # Build for production
-npm run preview  # Preview production build
-
-# Quality
-npm run check        # Type check
-npm run check:watch  # Type check (watch mode)
-npm run lint         # Lint code
-npm run format       # Format code
+yarn dev          # start dev server
+yarn build        # production build
+yarn preview      # preview production build
+yarn check        # svelte-check
+yarn check:watch  # svelte-check in watch mode
+yarn lint         # prettier + eslint
+yarn format       # format files
+yarn clean        # remove build/cache artifacts
 ```
 
-## License
+## Library Integration Model
 
-MIT License – see [LICENSE](./LICENSE) for details.
+Playground architecture is intentionally split:
 
-## Related
+- **Library layer (`stylist-svelte`)**: components, design-system, shared contracts.
+- **Playground layer (`src/lib`)**: app UI, local store, controls logic, URL state, presets, history, AI tooling.
 
-- [stylist-svelte](../stylist-svelte) – UI component library
-- [HumansOntology](../../) – Main project
+Useful aliases (`svelte.config.js`):
+
+- `$lib`, `$playground` -> local playground source
+- `$stylist`, `@stylist-svelte` -> `../stylist-svelte/src/lib`
+
+## State and UX System
+
+Central store:
+
+- `src/lib/components/stores/playground.svelte.ts`
+
+Key capabilities:
+
+- story registry and current story state,
+- control values and live prop updates,
+- theme/viewport/canvas settings,
+- local persistence,
+- URL sync and shareable links,
+- presets and history management,
+- in-app notifications.
+
+## Logging and Diagnostics
+
+Dev logging is integrated directly into Vite:
+
+- session/component logs are written to `logs/dev-errors/**`,
+- updates trigger `scripts/process-logs.mjs` via watcher,
+- see `LOGGING_SYSTEM.md` for details.
+
+## Project Structure (high-level)
+
+```text
+stylist-playground/
+├─ src/
+│  ├─ lib/
+│  │  ├─ components/
+│  │  │  ├─ playground/
+│  │  │  ├─ stores/
+│  │  │  └─ utils/
+│  │  ├─ api/
+│  │  ├─ types/
+│  │  └─ utils/
+│  └─ routes/
+├─ scripts/
+│  └─ process-logs.mjs
+├─ logs/
+├─ vite.config.ts
+├─ svelte.config.js
+└─ package.json
+```
+
+## Related Docs
+
+- `ARCHITECTURE.md` - system architecture and boundaries
+- `LOGGING_SYSTEM.md` - runtime logging pipeline
+- `../stylist-svelte/src/lib/design-system/README.md` - design-system guide

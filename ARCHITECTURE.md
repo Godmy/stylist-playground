@@ -1,150 +1,118 @@
-# Stylist Playground Architecture
+﻿# Stylist Playground Architecture
 
 ## Overview
 
-Stylist Playground is a full-featured component documentation and testing environment built on top of the `stylist-svelte` library.
+`stylist-playground` is a SvelteKit application for interactive exploration, validation, and documentation of `stylist-svelte` components.
 
-## Library Integration
+The playground is intentionally split into:
 
-### How the Library is Connected
+- local application logic (`src/lib/components`, local store, panels, utilities),
+- shared UI contracts and components from `stylist-svelte` (`workspace:*` dependency).
 
-The playground uses the `stylist-svelte` library in workspace mode:
+This allows fast iteration in the playground while keeping UI rules centralized in the library.
 
-```json
-// package.json
-{
-  "dependencies": {
-    "stylist-svelte": "workspace:*"
-  }
-}
-```
+## Integration With `stylist-svelte`
 
-### Import Aliases
+### Dependency model
 
-The project uses SvelteKit aliases for convenient imports:
+- `stylist-svelte` is consumed as `workspace:*`.
+- Playground runtime code (store, utilities, app panels) lives locally in `src/lib`.
+- Design-system and component contracts come from `stylist-svelte`.
 
-```js
-// svelte.config.js
-{
-  alias: {
-    // Playground's own components
-    $lib: './src/lib',
+### Aliases
 
-    // Direct access to stylist-svelte library
-    '@stylist-svelte': '../stylist-svelte/src/lib',
+Configured in `svelte.config.js`:
 
-    // Playground store and types from the library
-    '@stylist-svelte/playground': '../stylist-svelte/src/lib/playground'
-  }
-}
-```
+- `$lib` -> `./src/lib`
+- `$playground` -> `./src/lib`
+- `$stylist` -> `../stylist-svelte/src/lib`
+- `@stylist-svelte` -> `../stylist-svelte/src/lib`
 
-## Shared State Management
+## Core State Layer
 
-The playground uses the **library's playground store** (`playgroundStore`) from `@stylist-svelte/playground`, not a local duplicate.
+The central state is `playgroundStore` in:
 
-### Store Features
+- `src/lib/components/stores/playground.svelte.ts`
 
-The `playgroundStore` from the library provides:
+### Responsibilities
 
-- **State Management**: `state.darkMode`, `state.viewport`, `state.sidebarOpen`, etc.
-- **UI State**: `uiState.showGrid`, `uiState.zoom`, `uiState.background`
-- **Story Management**: `stories` Map, `registerStory()`, `getCurrentStory()`
-- **Control Values**: `controlValues`, `updateControl()`
-- **Theme Management**: `toggleDarkMode()`, `init()` with localStorage and system preference detection
+- Story registry (`registerStory`, `unregisterStory`, `getStoriesByCategory`)
+- Active story and control values (`setCurrentStory`, `updateControl`)
+- Canvas/layout state (viewport, grid, zoom, panel visibility)
+- Theme switching (`toggleDarkMode`, `init`) via `applyThemeToDOM`
+- URL synchronization (`restoreFromURL`, `syncToURL`, `getShareURL`)
+- Presets management (save/load/favorite/duplicate/rename/delete)
+- History tracking (recent/most visited/stats)
+- Notification API (`success`, `error`, `warning`, `info`)
+- Local persistence (`playground-state`, theme keys)
 
-### Usage Example
+### Theme behavior
 
-```svelte
-<script lang="ts">
-  import { playgroundStore } from '@stylist-svelte/playground';
-  import { onMount } from 'svelte';
+Theme flow is driven by design-system and synchronized with DOM:
 
-  onMount(() => {
-    // Initialize theme from localStorage/system
-    playgroundStore.init();
-  });
-</script>
-
-<button onclick={() => playgroundStore.toggleDarkMode()}>
-  Toggle Theme
-</button>
-
-{#if playgroundStore.state.darkMode}
-  <span>Dark Mode Active</span>
-{/if}
-```
-
-## Vite Configuration
-
-Custom plugin for resolving `$lib` imports in library components:
-
-```ts
-// vite.config.ts
-{
-  name: 'stylist-svelte-lib-resolver',
-  resolveId(source, importer) {
-    // Resolves $lib imports from stylist-svelte package
-    // to actual file paths
-  }
-}
-```
+1. Theme is resolved from storage and/or system preference in `init()`.
+2. `applyThemeToDOM(theme)` applies CSS variables.
+3. `data-theme` and Tailwind `dark` class are synchronized on `document.documentElement`.
+4. Theme value is persisted to `stylist-theme` and legacy `theme` key.
 
 ## Component Structure
 
-### From Library (`@stylist-svelte/playground`)
-- `playgroundStore` - Central state management
-- `Story` - Story wrapper component
-- `ControlConfig`, `StoryConfig` - Type definitions
+Main UI modules in `src/lib/components/playground` include:
 
-### Playground App (local)
-- `PlaygroundToolbar` - Top toolbar with viewport controls
-- `PlaygroundSidebar` - Left sidebar for navigation
-- `ComponentCanvas` - Main canvas with zoom/grid
-- `ControlsPanel` - Interactive controls panel
-- `BottomPanel` - Bottom panel layout
+- `PlaygroundToolbar`
+- `PlaygroundSidebar`
+- `Canvas`
+- `PlaygroundControlPanel`
+- `BottomPanel`
+- `ComponentTree`
+- `Story` / `StoryRoot`
+- `AIPanel`, `AIChat`, `AIAssistant`
+- utility panels (`AccessibilityPanel`, `VariantsPanel`, `PresetsPanel`, `HistoryPanel`, etc.)
 
-## Theme System
+## Vite Runtime Architecture
 
-### How Dark Mode Works
+`vite.config.ts` contains three key integration layers:
 
-1. **Initialization** (`playgroundStore.init()`):
-   - Checks `localStorage.theme`
-   - Falls back to system preference: `prefers-color-scheme: dark`
-   - Applies `dark` class to `document.documentElement`
+1. `createErrorLoggerPlugin()`
+- Hooks into dev logger and watcher errors.
+- Writes logs to `logs/dev-errors`.
+- Produces:
+  - session logs: `logs/dev-errors/session-*.log`
+  - component logs: `logs/dev-errors/components/**/<component>.log`
 
-2. **Toggle** (`playgroundStore.toggleDarkMode()`):
-   - Flips `state.darkMode`
-   - Updates DOM class
-   - Saves to localStorage
+2. `watchAndRun`
+- Watches `logs/dev-errors/**/*.log`.
+- Runs `node scripts/process-logs.mjs` with 500ms debounce.
 
-3. **CSS** (Tailwind):
-   - Uses `dark:` variant for styling
-   - Example: `bg-white dark:bg-gray-900`
+3. `stylist-svelte-lib-resolver`
+- Resolves `stylist-svelte/*` and `$lib/*` imports from library sources.
+- Uses synchronous file existence checks with cache for fast hot reload.
 
-### Initial Theme Loading
+## Data Boundaries
 
-The `app.html` includes inline script to prevent FOUC (Flash of Unstyled Content):
+### Playground-owned
 
-```html
-<script>
-  if (localStorage.theme === 'dark' ||
-      (!('theme' in localStorage) &&
-       window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    document.documentElement.classList.add('dark')
-  }
-</script>
-```
+- Story navigation behavior
+- URL/preset/history storage
+- AI panel and non-library UX tooling
+- Logging and log processing
 
-## Best Practices
+### Library-owned (`stylist-svelte`)
 
-1. **Always use library store**: Import from `@stylist-svelte/playground`, not local duplicates
-2. **Initialize on mount**: Call `playgroundStore.init()` in root layout
-3. **Access state directly**: Use `playgroundStore.state.xxx` and `playgroundStore.uiState.xxx`
-4. **Story registration**: Let `Story` component handle registration automatically
+- UI components
+- design-system tokens/themes/classes/state helpers
+- type contracts exported by library modules
 
-## Performance Optimizations
+## Operational Notes
 
-1. **Vite resolver caching**: File path resolution results are cached
-2. **Synchronous resolution**: Uses `fs.existsSync()` instead of async operations
-3. **Pre-bundling**: `optimizeDeps.include` for frequently used dependencies
+- Dev filesystem access is explicitly allowed for parent directories (`server.fs.allow = ['..']`).
+- Log processing is dev-only and attached to Vite serve mode.
+- `optimizeDeps.include` pre-bundles `lucide-svelte` and `shiki` for faster startup.
+
+## Recommended Usage Pattern
+
+1. Start playground (`yarn dev` in `stylist-playground`).
+2. Let stories register themselves through `Story`/`StoryRoot`.
+3. Initialize store once at app root (`playgroundStore.init()`).
+4. Keep component contracts in `stylist-svelte`; keep playground behavior in local modules.
+5. Use URL/presets/history as first-class debugging and review tools.
