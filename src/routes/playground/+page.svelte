@@ -1,18 +1,18 @@
 <script lang="ts">
-  import { playgroundStore } from '../../lib/components/stores/playground.svelte';
-  import Canvas from '../../lib/components/playground/Canvas.svelte';
-  import ComponentTree from '../../lib/components/playground/ComponentTree.svelte';
-  import type { StoryConfig } from '../../lib/components/types';
   import {
+    AIAssistant,
+    AIPanel,
+    AnimatedBackground,
+    Canvas,
+    ComponentTree,
+    DrawingOverlay,
     allStories,
-    groupedStories,
     getStoryById,
-    type Story as PlaygroundStory
-  } from '../../lib/utils/stories';
-  import AnimatedBackground from '../../lib/components/playground/AnimatedBackground.svelte';
-  import DrawingOverlay from '../../lib/components/playground/DrawingOverlay.svelte';
-  import AIPanel from '../../lib/components/playground/AIPanel.svelte';
-  import AIAssistant from '../../lib/components/playground/AIAssistant.svelte';
+    groupedStories,
+    playgroundStore,
+    type StoryConfig
+  } from '$playground/playground';
+  import type { Story as PlaygroundStory } from '$playground/playground/stories';
   import { onMount } from 'svelte';
 
   const messages = {
@@ -69,10 +69,8 @@
   // Derive UI state from the central store
   let showComponentTree = $derived(playgroundStore.uiState.componentTreeOpen);
   let showAIPanel = $derived(playgroundStore.uiState.aiPanelOpen);
-
-  // TODO: Centralize drawing mode state in the store as well.
-  let drawingMode = $state(false);
-  let drawColor = $state('#ef4444');
+  let drawingMode = $derived(playgroundStore.uiState.drawingMode);
+  let drawColor = $derived(playgroundStore.uiState.drawColor);
 
   // Story loading state remains local to this page to avoid circular dependencies
   let selectedStory = $state<PlaygroundStory | null>(null);
@@ -207,9 +205,7 @@
         style="height: 100%; display: grid; grid-template-rows: 1fr; box-shadow: 0 20px 45px rgba(147, 51, 234, 0.18);"
       >
         <AIPanel
-          onOptionSelect={(providerId, optionId) => {
-            console.log('Selected:', providerId, optionId);
-          }}
+          onOptionSelect={() => {}}
           onStartChat={(providerId) => {
             activeAIProvider = providerId;
             showAIChatWindow = true;
@@ -302,7 +298,7 @@
   {#if drawingMode}
     <DrawingOverlay
       {drawColor}
-      onClose={() => (drawingMode = false)}
+      onClose={() => playgroundStore.setDrawingMode(false)}
     />
   {/if}
 

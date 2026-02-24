@@ -1,9 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import PlaygroundHeader from '../../lib/components/PlaygroundHeader.svelte';
-  import Toast from '../../lib/components/playground/Toast.svelte';
+  import { PlaygroundHeader, Toast, playgroundStore } from '$playground/playground';
   import { onMount, setContext } from 'svelte';
-  import { playgroundStore } from '../../lib/components/stores/playground.svelte';
 
   type Props = {
     children: Snippet;
@@ -17,9 +15,8 @@
   // AI Panel visibility - синхронизировано с глобальным стором
   let showAIPanel = $derived(playgroundStore.uiState.aiPanelOpen);
 
-  // Drawing mode state
-  let drawingMode = $state(false);
-  let drawColor = $state('#ef4444'); // red by default
+  let drawingMode = $derived(playgroundStore.uiState.drawingMode);
+  let drawColor = $derived(playgroundStore.uiState.drawColor);
 
   // Toast notification state
   let showToast = $state(false);
@@ -52,12 +49,12 @@
 
   setContext('drawingMode', {
     get value() { return drawingMode; },
-    set value(v: boolean) { drawingMode = v; }
+    set value(v: boolean) { playgroundStore.setDrawingMode(v); }
   });
 
   setContext('drawColor', {
     get value() { return drawColor; },
-    set value(v: string) { drawColor = v; }
+    set value(v: string) { playgroundStore.setDrawColor(v); }
   });
 
   function toggleComponentTree() {
@@ -69,7 +66,7 @@
   }
 
   function toggleDrawingMode() {
-    drawingMode = !drawingMode;
+    playgroundStore.toggleDrawingMode();
   }
 
   async function takeScreenshot() {
@@ -157,9 +154,7 @@
               showToast = true;
               return;
             }
-          } catch (apiError) {
-            console.log('API not available, using fallback');
-          }
+          } catch {}
 
           // Fallback: download locally
           const url = URL.createObjectURL(blob);
@@ -223,7 +218,7 @@
     onToggleAIPanel={toggleAIPanel}
     onToggleDrawingMode={toggleDrawingMode}
     onTakeScreenshot={takeScreenshot}
-    onChangeDrawColor={(color) => drawColor = color}
+    onChangeDrawColor={(color) => playgroundStore.setDrawColor(color)}
   />
   <div class="flex-1 overflow-hidden">
     {@render children()}

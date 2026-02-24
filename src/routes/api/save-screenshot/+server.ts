@@ -1,7 +1,14 @@
 import { json } from '@sveltejs/kit';
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
+import { mkdir, writeFile } from 'fs/promises';
+import { extname, join } from 'path';
+import { randomUUID } from 'crypto';
 import type { RequestHandler } from './$types';
+
+function createSafeFilename(originalName: string): string {
+  const rawExt = extname(originalName).toLowerCase();
+  const ext = ['.png', '.jpg', '.jpeg', '.webp'].includes(rawExt) ? rawExt : '.png';
+  return `screenshot-${Date.now()}-${randomUUID()}${ext}`;
+}
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
@@ -12,8 +19,7 @@ export const POST: RequestHandler = async ({ request }) => {
       return json({ error: 'No screenshot provided' }, { status: 400 });
     }
 
-    // Get the filename
-    const filename = screenshot.name;
+    const filename = createSafeFilename(screenshot.name);
 
     // Save to static/screenshots folder
     const screenshotsDir = join(process.cwd(), 'static', 'screenshots');
@@ -22,15 +28,8 @@ export const POST: RequestHandler = async ({ request }) => {
     // Convert File to Buffer
     const buffer = Buffer.from(await screenshot.arrayBuffer());
 
-    // Ensure directory exists
-    try {
-      await writeFile(filepath, buffer);
-    } catch (err) {
-      // If directory doesn't exist, create it and retry
-      const { mkdir } = await import('fs/promises');
-      await mkdir(screenshotsDir, { recursive: true });
-      await writeFile(filepath, buffer);
-    }
+    await mkdir(screenshotsDir, { recursive: true });
+    await writeFile(filepath, buffer);
 
     return json({
       success: true,

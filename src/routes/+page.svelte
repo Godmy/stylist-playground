@@ -1,11 +1,13 @@
 <script lang="ts">
-  import Hero from '$playground/components/landing/Hero.svelte';
-  import Stats from '$playground/components/landing/Stats.svelte';
-  import CtaButtons from '$playground/components/landing/CtaButtons.svelte';
-  import AtomicPrinciples from '$playground/components/landing/AtomicPrinciples.svelte';
-  import LiveCode from '$playground/components/landing/LiveCode.svelte';
-  import Features from '$playground/components/landing/Features.svelte';
-  import Mission from '$playground/components/landing/Mission.svelte';
+  import {
+    AtomicPrinciples,
+    CtaButtons,
+    Features,
+    Hero,
+    LiveCode,
+    Mission,
+    Stats
+  } from '$playground/playground';
 
   // Get paths to all story files to calculate stats
   const storyImports = import.meta.glob(

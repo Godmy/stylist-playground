@@ -1,9 +1,13 @@
 <script lang="ts">
-  import { createAIClient } from '../../lib/api/aiClient';
+  import { AI_PROVIDER_URLS, AI_WORKSPACE, createAIClient } from '$playground/playground';
 
   let result = $state('');
   let error = $state('');
   let loading = $state(false);
+  const manualHealthSnippet = `fetch('${AI_PROVIDER_URLS.gemini}/healthz')
+  .then(r => r.json())
+  .then(console.log)
+  .catch(console.error)`;
 
   async function testGemini() {
     result = '';
@@ -14,7 +18,7 @@
       const client = createAIClient('gemini');
 
       // Test healthz first
-      const healthResponse = await fetch('http://127.0.0.1:41241/healthz');
+      const healthResponse = await fetch(`${AI_PROVIDER_URLS.gemini}/healthz`);
       const health = await healthResponse.json();
       result += `Health check: ${JSON.stringify(health)}\n\n`;
 
@@ -39,13 +43,13 @@
     loading = true;
 
     try {
-      const response = await fetch('http://127.0.0.1:41241/v1/chat', {
+      const response = await fetch(`${AI_PROVIDER_URLS.gemini}/v1/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          workspace: 'D:/2025/dev',
+          workspace: AI_WORKSPACE,
           prompt: 'Привет!',
           autoApproveTools: true,
         }),
@@ -103,8 +107,8 @@
     <div class="mt-8 p-4 bg-gray-100 dark:bg-gray-800 rounded">
       <h2 class="text-xl font-bold mb-4">Debug Info</h2>
       <ul class="space-y-2 text-sm">
-        <li><strong>Gemini Server:</strong> http://127.0.0.1:41241</li>
-        <li><strong>Workspace:</strong> D:/2025/dev</li>
+        <li><strong>Gemini Server:</strong> {AI_PROVIDER_URLS.gemini}</li>
+        <li><strong>Workspace:</strong> {AI_WORKSPACE}</li>
         <li><strong>Current URL:</strong> {typeof window !== 'undefined' ? window.location.href : 'N/A'}</li>
       </ul>
     </div>
@@ -113,10 +117,7 @@
       <h3 class="font-bold mb-2">Manual Tests</h3>
       <p class="text-sm mb-2">Open browser console and run:</p>
       <pre class="bg-white p-2 rounded text-xs overflow-x-auto">
-fetch('http://127.0.0.1:41241/healthz')
-  .then(r => r.json())
-  .then(console.log)
-  .catch(console.error)
+{manualHealthSnippet}
       </pre>
     </div>
   </div>

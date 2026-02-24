@@ -1,57 +1,25 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  // Use the library playground components and store
+  import { playgroundStore, Canvas } from '$playground/playground';
+  import type { Story as PlaygroundStory } from '$playground/playground/stories';
   import {
-    playgroundStore,
-    PlaygroundSidebar,
-    BottomPanel,
-    PlaygroundControlPanel,
-    CodeViewer,
-    GenericCodeViewer,
-    Canvas,
-    EnhancedExportPanel
-  } from '../../../lib/components';
-  import { keyboardShortcuts } from '../../../lib/utils/keyboard-shortcuts';
-  import { generateCode } from '@stylist-svelte/utils/code-preview';
+    deinitKeyboardShortcuts,
+    initKeyboardShortcuts,
+    registerShortcut
+  } from '$playground/playground';
 
   interface Props {
     data: {
-      story: any;
+      story: PlaygroundStory;
     };
   }
 
   let { data }: Props = $props();
 
-  // Example variants for the component
-  const variants = $state([
-    {
-      name: 'Default',
-      description: 'Default component state',
-      props: {}
-    },
-    {
-      name: 'With Props',
-      description: 'Component with sample props',
-      props: { disabled: false }
-    }
-  ]);
-
-  // Generate code for current props
-  const generatedCode = $derived.by(() => {
-    return generateCode({
-      componentName: data.story.componentName,
-      props: playgroundStore.controlValues
-    });
-  });
-
   onMount(() => {
-    // Don't call init() here - it's called in +layout.svelte
-    // Don't call setCurrentStory - let the Story component handle its own state
-
-    // Restore state from URL if present
+    initKeyboardShortcuts();
     playgroundStore.restoreFromURL();
 
-    // Auto-sync state to URL on changes (debounced)
     let syncTimeout: ReturnType<typeof setTimeout>;
     const syncToURL = () => {
       clearTimeout(syncTimeout);
@@ -76,65 +44,40 @@
       });
     });
 
-    // Register keyboard shortcuts
-    keyboardShortcuts.register({
+    registerShortcut({
       key: '/',
       ctrl: true,
       description: 'Toggle sidebar',
       action: () => playgroundStore.toggleSidebar()
     });
 
-    keyboardShortcuts.register({
+    registerShortcut({
       key: 'd',
       ctrl: true,
       description: 'Toggle dark mode',
       action: () => playgroundStore.toggleDarkMode()
     });
 
-    keyboardShortcuts.register({
+    registerShortcut({
       key: 'b',
       ctrl: true,
       description: 'Toggle bottom panel',
       action: () => playgroundStore.toggleBottomPanel()
     });
 
-    keyboardShortcuts.register({
+    registerShortcut({
       key: 'g',
       ctrl: true,
       description: 'Toggle grid',
       action: () => playgroundStore.toggleGrid()
     });
 
-
     return () => {
-      // Cleanup
       clearTimeout(syncTimeout);
       unsubscribe();
-      keyboardShortcuts.clear();
+      deinitKeyboardShortcuts();
     };
   });
-
-  function handlePropsChange(newProps: Record<string, any>) {
-    // Update each control value
-    Object.entries(newProps).forEach(([key, value]) => {
-      playgroundStore.updateControl(key, value);
-    });
-  }
-
-  let copySuccess = $state(false);
-
-  async function copyCodeToClipboard() {
-    try {
-      const code = generatedCode;
-      await navigator.clipboard.writeText(code);
-      copySuccess = true;
-      setTimeout(() => {
-        copySuccess = false;
-      }, 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  }
 </script>
 
 <!-- Simple canvas-only view -->

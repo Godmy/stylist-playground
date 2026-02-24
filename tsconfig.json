@@ -3,6 +3,16 @@
   "compilerOptions": {
     "allowJs": true,
     "checkJs": true,
+    "paths": {
+      "$lib": ["./src/lib", "../stylist-svelte/src/lib"],
+      "$lib/*": ["./src/lib/*", "../stylist-svelte/src/lib/*"],
+      "$playground": ["./src/lib"],
+      "$playground/*": ["./src/lib/*"],
+      "$stylist": ["../stylist-svelte/src/lib"],
+      "$stylist/*": ["../stylist-svelte/src/lib/*"],
+      "@stylist-svelte": ["../stylist-svelte/src/lib"],
+      "@stylist-svelte/*": ["../stylist-svelte/src/lib/*"]
+    },
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,

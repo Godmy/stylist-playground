@@ -1,7 +1,7 @@
 <script lang="ts">
   import '../app.css';
-  import { Moon, Sun, Home } from 'lucide-svelte';
-  import { playgroundStore } from '../lib/components/stores/playground.svelte';
+  import { Moon, Sun } from 'lucide-svelte';
+  import { playgroundStore } from '$playground/playground';
   import { ThemeProvider } from '@stylist-svelte';
   import type { ThemeName } from '@stylist-svelte/design-system/themes';
   import { page } from '$app/stores';
@@ -21,8 +21,6 @@
 
   // Reactive state from the centralized store
   let darkMode = $derived(playgroundStore.state.darkMode);
-  let componentTreeOpen = $derived(playgroundStore.uiState.componentTreeOpen);
-
   // Check if on playground page
   let isPlaygroundPage = $derived($page.url.pathname.startsWith('/playground'));
 
@@ -36,7 +34,7 @@
   <!-- Simple top nav (hidden on playground pages) -->
   {#if !isPlaygroundPage}
   <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
-    <div class="{isPlaygroundPage ? '' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'}">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-14">
         <div class="flex items-center gap-3">
           <!-- Logo in top-left corner (always links to home) -->
@@ -44,32 +42,15 @@
             <img src="/stylist.png" alt="Stylist logo" class="w-10 h-10" loading="lazy" decoding="async" />
           </a>
 
-          {#if isPlaygroundPage}
-            <!-- STYLIST text as toggle button (only on playground pages) -->
-            <button
-              onclick={() => playgroundStore.toggleComponentTree()}
-              class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 {componentTreeOpen
-                ? 'bg-[var(--playground-accent-surface)] dark:bg-[var(--playground-accent-surface-strong)] ring-2 ring-[var(--playground-accent)] shadow-[0_15px_30px_var(--playground-accent-shadow)]'
-                : 'hover:bg-[var(--playground-accent-surface)] dark:hover:bg-[var(--playground-accent-surface-strong)]'}"
-            >
-              <span class="text-xl font-black tracking-tight {componentTreeOpen ? 'text-[var(--playground-accent)]' : 'text-gray-900 dark:text-white'}">
-                STYLIST
-              </span>
-            </button>
-          {:else}
-            <!-- Regular STYLIST text (non-playground pages) -->
-            <span class="text-xl font-black tracking-tight text-gray-900 dark:text-white pl-3">
-              STYLIST
-            </span>
-          {/if}
+          <span class="text-xl font-black tracking-tight text-gray-900 dark:text-white pl-3">
+            STYLIST
+          </span>
 
           <div class="h-6 border-l border-gray-300 dark:border-gray-600"></div>
 
-          {#if !isPlaygroundPage}
-            <a href="/playground" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-[var(--playground-accent)] dark:hover:text-[var(--playground-accent)] transition-colors">
-              Playground
-            </a>
-          {/if}
+          <a href="/playground" class="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-[var(--playground-accent)] dark:hover:text-[var(--playground-accent)] transition-colors">
+            Playground
+          </a>
         </div>
 
         <div class="flex items-center gap-4">

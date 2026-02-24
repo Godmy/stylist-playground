@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { getStoryById } from '../../../lib/utils/stories';
+import { getStoryById } from '$playground/playground';
 import type { PageLoad } from './$types';
 
 // Disable SSR because story components use dynamic imports (import.meta.glob)

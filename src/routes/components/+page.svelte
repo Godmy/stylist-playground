@@ -1,8 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { page } from '$app/stores';
-  import { allStories, groupedStories } from '../../lib/utils/stories';
-  import { Search, Filter, Grid, List, SortAsc, X, Tag, Code, Layers, Package, ArrowRight, Sparkles, ExternalLink, FileCode, FolderOpen } from 'lucide-svelte';
+  import { allStories, groupedStories } from '$playground/playground';
+  import { Search, Filter, Grid, List, SortAsc, X, Tag, Code, Layers, Package, ArrowRight, Sparkles } from 'lucide-svelte';
 
   // View modes
   type ViewMode = 'grid' | 'list';
@@ -153,23 +152,6 @@
     goto(`/playground/${storyId}`);
   }
 
-  function getShortPath(path: string): string {
-    // Extract meaningful path like "atoms/controls/buttons"
-    const parts = path.split('/');
-    const componentsIndex = parts.findIndex(p => p === 'components');
-    if (componentsIndex !== -1) {
-      const relevantParts = parts.slice(componentsIndex + 1, -1); // exclude "components" and filename
-      return relevantParts.join('/');
-    }
-    return path;
-  }
-
-  function openSourceFile(path: string, event: Event) {
-    event.stopPropagation();
-    // In a real app, this would open the file in the editor or GitHub
-    console.log('Open source file:', path);
-    alert(`Source file path:\n${path}\n\n(In production, this would open in your editor or GitHub)`);
-  }
 </script>
 
 <div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
